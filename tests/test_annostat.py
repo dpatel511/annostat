@@ -19,6 +19,7 @@ from annostat.filtering import CdsFilter
 from annostat.models import Feature
 from annostat.ncbi import _safe_extract, fetch_genomes
 from annostat.parsers import parse_attributes, parse_fasta, parse_gff
+from annostat.plots import write_comparison_overview, write_histogram
 from annostat.qc import (
     feature_quality_findings,
     quality_summary,
@@ -420,6 +421,47 @@ class AnnostatTests(unittest.TestCase):
             plot = (output / "plots" / "start_codons.svg").read_text(encoding="utf-8")
             self.assertIn("No complete first codon", plot)
             self.assertRegex(plot, r"1\s+\(100\.00%\)")
+
+    def test_cds_histogram_discloses_and_limits_long_tail(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory) / "lengths.svg"
+            values = [100] * 99 + [10_000]
+
+            write_histogram(output, "CDS lengths", values)
+
+            plot = output.read_text(encoding="utf-8")
+            self.assertIn("main view through the 99th percentile", plot)
+            self.assertIn("1 CDS above 100 nt", plot)
+            self.assertIn("Mean: 199 nt (outside view)", plot)
+
+    def test_comparison_overview_keeps_missing_cog_row_in_panel(self) -> None:
+        profiles = [
+            {
+                "label": label,
+                "gc_percent": 50,
+                "coding_density_percent": 80,
+                "cog_coverage_percent": cog,
+                "cog_data_available": available,
+                "hypothetical_percent": 10,
+                "gene_name_percent": 20,
+                "cds_per_mb": 900,
+            }
+            for label, cog, available in (
+                ("alpha", 60, True),
+                ("beta", 50, True),
+                ("missing", 0, False),
+            )
+        ]
+        captured_limits = []
+
+        def inspect_figure(figure, *_args, **_kwargs):
+            captured_limits.extend(axis.get_ylim() for axis in figure.axes)
+
+        with patch("annostat.plots._save_svg", side_effect=inspect_figure):
+            write_comparison_overview(Path("unused.svg"), profiles)
+
+        self.assertEqual(len(captured_limits), 6)
+        self.assertEqual(captured_limits[2], (2.5, -0.5))
 
     def test_reused_output_directory_removes_only_stale_generated_variants(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

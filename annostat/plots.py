@@ -225,7 +225,21 @@ def write_histogram(
 ) -> None:
     """Write a CDS-length histogram with mean and median markers."""
 
+    sorted_values = sorted(values)
+    plotted_values = sorted_values
+    outlier_count = 0
+    cutoff = None
+    if len(sorted_values) >= 100:
+        cutoff = sorted_values[int(0.99 * (len(sorted_values) - 1))]
+        outlier_count = sum(value > cutoff for value in sorted_values)
+        if outlier_count:
+            plotted_values = [value for value in sorted_values if value <= cutoff]
     description = f"Distribution across {len(values):,} coding sequences"
+    if outlier_count and cutoff is not None:
+        description += (
+            f"; main view through the 99th percentile "
+            f"({outlier_count:,} CDS above {cutoff:,} nt)"
+        )
     with mpl.rc_context(_STYLE):
         figure = _new_figure(12, 6.5, title, description)
         axis = figure.subplots()
@@ -247,7 +261,7 @@ def write_histogram(
             _save_svg(figure, path, title, description)
             return
 
-        minimum, maximum = min(values), max(values)
+        minimum, maximum = min(plotted_values), max(plotted_values)
         span = max(1, maximum - minimum + 1)
         bin_width = max(1, (span + bins - 1) // bins)
         bin_count = max(1, (span + bin_width - 1) // bin_width)
@@ -256,7 +270,7 @@ def write_histogram(
             edges.append(edges[-1] + bin_width)
 
         axis.hist(
-            values,
+            plotted_values,
             bins=edges,
             color=_BLUE,
             edgecolor="white",
@@ -264,11 +278,22 @@ def write_histogram(
             alpha=0.9,
             zorder=2,
         )
+        axis.set_xlim(edges[0], edges[-1])
         center_markers = (
             (median(values), "Median", _GREEN),
             (mean(values), "Mean", _ORANGE),
         )
         for value, label, color in center_markers:
+            if value > edges[-1]:
+                axis.plot(
+                    [],
+                    [],
+                    color=color,
+                    linewidth=2,
+                    linestyle="--",
+                    label=f"{label}: {value:,.0f} nt (outside view)",
+                )
+                continue
             axis.axvline(
                 value,
                 color=color,
@@ -361,6 +386,7 @@ def write_comparison_overview(
                     fontsize=8,
                     color=color,
                 )
+            axis.set_ylim(len(profiles) - 0.5, -0.5)
             if metric_index != len(metrics) - 1:
                 axis.set_xlabel("")
 

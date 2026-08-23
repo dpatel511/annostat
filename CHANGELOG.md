@@ -15,6 +15,11 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Plot generation now uses Matplotlib's headless SVG backend for stronger axes,
   layout, typography, and comparison heatmaps while retaining existing filenames
   and offline report behavior.
+- CDS-length plots now disclose and focus the main histogram on the 99th
+  percentile when extreme values would obscure the observed distribution.
+- Comparative overview plots retain missing COG rows within their intended panel.
+- Installation documentation now accurately identifies Matplotlib as a required
+  runtime dependency.
 
 ## [1.0.2] - 2026-08-19
 

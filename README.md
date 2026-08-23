@@ -5,7 +5,7 @@
 [![CI](https://github.com/dpatel511/annostat/actions/workflows/ci.yml/badge.svg)](https://github.com/dpatel511/annostat/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/dpatel511/annostat/blob/main/LICENSE)
 
-**Annostat** is a dependency-free command-line toolkit for validating,
+**Annostat** is a command-line toolkit for validating,
 analyzing, comparing, and summarizing bacterial genome annotations from matching
 GFF3 and FASTA files. It produces reproducible machine-readable results,
 self-contained HTML reports, CDS sequence exports, and editable SVG figures.
@@ -69,14 +69,12 @@ self-contained HTML reports, CDS sequence exports, and editable SVG figures.
 | Component | Status | Purpose |
 |---|---|---|
 | Python 3.10 or newer | Required | Runs Annostat and its test suite |
+| Matplotlib 3.10 or newer | Required | Generates headless, publication-ready SVG plots |
 | Genome FASTA (`.fna`, `.fa`, or `.fasta`) | Required | Supplies the genome sequences |
 | Matching GFF3 annotation (`.gff` or `.gff3`) | Required | Supplies feature coordinates and annotations |
 | Matching FASTA/GFF3 sequence identifiers | Required | Connects every annotated feature to its sequence |
 | NCBI Datasets CLI | Optional | Downloads GCF/GCA assemblies for `fetch` or `compare --reference` |
 | Internet connection | Optional | Needed only when downloading NCBI data |
-
-No third-party Python package is required for local analysis, report generation,
-tables, FASTA exports, or SVG plots.
 
 ### Core outputs
 
@@ -120,8 +118,8 @@ analysis, cohort summaries, and NCBI connectivity extend the core workflow.
 
 ## Installation
 
-Annostat requires Python 3.10 or newer and has no third-party runtime
-dependencies.
+Annostat requires Python 3.10 or newer. Installation automatically includes
+Matplotlib 3.10 or newer for headless SVG plot generation.
 
 ### Install from PyPI
 
