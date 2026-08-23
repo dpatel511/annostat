@@ -8,6 +8,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-08-23
+
 ### Changed
 
 - Full analysis retains `validation.json` provenance for clean inputs but writes
