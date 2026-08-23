@@ -22,6 +22,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Comparative overview plots retain missing COG rows within their intended panel.
 - Installation documentation now accurately identifies Matplotlib as a required
   runtime dependency.
+- PyPI metadata now identifies the author and canonical project URLs.
+- Repository identity links now consistently use the canonical GitHub location.
 
 ## [1.0.2] - 2026-08-19
 

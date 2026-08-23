@@ -32,7 +32,7 @@ decisions should be proportionate, documented privately, and protect the safety
 and privacy of reporters.
 
 Report an incident privately to the project maintainer using the contact method
-listed on the [repository owner's GitHub profile](https://github.com/Karudhoru).
+listed on the [repository owner's GitHub profile](https://github.com/dpatel511).
 Do not disclose sensitive conduct reports in a public issue. Reports will be
 reviewed promptly, fairly, and with appropriate confidentiality.
 
