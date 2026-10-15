@@ -14,6 +14,11 @@ self-contained HTML reports, CDS sequence exports, and editable SVG figures.
 > does not replace an annotation pipeline, infer orthology, calculate ANI, or
 > establish biological correctness from sequence alone.
 
+This README describes **Annostat 1.1.0**, which adds opt-in CDS-by-CDS comparison
+of two annotations on the same unchanged genome. Check `annostat --version`:
+package indexes may provide an earlier release, and unreleased changes require
+a source checkout containing those changes.
+
 ## Contents
 
 - [Capabilities](#capabilities)
@@ -40,7 +45,7 @@ self-contained HTML reports, CDS sequence exports, and editable SVG figures.
 - Supports optional CDS exports filtered by length, COG annotation, and
   hypothetical-protein status without changing the complete analysis
 - Builds a self-contained offline HTML report with provenance and performance timings
-- Saves three focused, publication-ready SVG charts for COG categories, CDS lengths,
+- Saves three focused, editable SVG charts for COG categories, CDS lengths,
   and table-aware start codons; the COG chart is omitted when the source has no
   COG data
 - Streams CDS processing and FASTA generation to reduce runtime and peak memory
@@ -48,6 +53,8 @@ self-contained HTML reports, CDS sequence exports, and editable SVG figures.
   annotation-completeness, COG, start-codon, and QC profiles
 - Reports pairwise Jensen-Shannon profile distances and exact gene-symbol/COG-ID
   overlap without presenting annotation labels as inferred orthologs
+- Optionally compares individual CDS models from two annotations of identical
+  genome sequences with `compare --gene-level`
 - Downloads versioned RefSeq or GenBank assemblies through the official NCBI
   Datasets command-line tool when network connectivity is requested
 - Separates deterministic FASTA/GFF3 validation from biological inspection, with
@@ -69,7 +76,7 @@ self-contained HTML reports, CDS sequence exports, and editable SVG figures.
 | Component | Status | Purpose |
 |---|---|---|
 | Python 3.10 or newer | Required | Runs Annostat and its test suite |
-| Matplotlib 3.10 or newer | Required | Generates headless, publication-ready SVG plots |
+| Matplotlib 3.10 or newer | Required | Generates headless, editable SVG plots |
 | Genome FASTA (`.fna`, `.fa`, or `.fasta`) | Required | Supplies the genome sequences |
 | Matching GFF3 annotation (`.gff` or `.gff3`) | Required | Supplies feature coordinates and annotations |
 | Matching FASTA/GFF3 sequence identifiers | Required | Connects every annotated feature to its sequence |
@@ -150,10 +157,10 @@ annostat --version
 annostat --help
 ```
 
-Expected version output:
+Expected output for a 1.1.0 installation:
 
 ```text
-Annostat 1.0.3
+Annostat 1.1.0
 ```
 
 ### Install from source
@@ -173,8 +180,19 @@ executable is unavailable, the equivalent module form is `python -m annostat`.
 
 ### Bioconda
 
-The Bioconda recipe is under community review. Until it is merged, install the
-released package from PyPI or source rather than using an unofficial channel.
+Annostat is available through [Bioconda](https://bioconda.github.io/recipes/annostat/README.html).
+On Linux, WSL, or macOS, create an environment using the
+[recommended channel order and strict priority](https://bioconda.github.io/#with-conda):
+
+```bash
+conda create -n annostat --channel conda-forge --channel bioconda \
+  --strict-channel-priority annostat
+conda activate annostat
+annostat --version
+```
+
+Bioconda releases may lag PyPI or GitHub. The `--gene-level` option requires
+Annostat 1.1.0 or newer. For native Windows, use the PyPI instructions above.
 
 ## Quick start
 
@@ -198,10 +216,8 @@ annostat validate \
 Example output for the included dataset:
 
 ```text
-Annostat 1.0.3 | annotation validation PASS
-  Errors                   0
-  Warnings                 0
-  Findings                 0
+Annostat 1.1.0 | annotation validation PASS
+  No validation issues found; no output files were written.
 ```
 
 When no issues are found, the standalone command does not create an output
@@ -261,6 +277,7 @@ retained and flagged in the report.
 | `annostat validate` | Check deterministic structural and cross-file integrity | JSON and TSV validation findings |
 | `annostat summarize` | Aggregate completed Annostat analyses | Cohort HTML, TSV, and JSON |
 | `annostat compare` | Compare two or more local or NCBI annotations | Comparative HTML, JSON, TSV, and SVG |
+| `annostat compare --gene-level` | Compare CDS models in exactly two annotations of the same unchanged genome | Adds CDS relationships to the comparison HTML, JSON, and TSV |
 | `annostat fetch` | Download versioned NCBI assemblies | FASTA, GFF3, and assembly metadata |
 
 Run `annostat COMMAND --help` for required arguments, defaults, examples, and
@@ -347,6 +364,90 @@ or more datasets, it becomes a dataset-by-category heatmap. Exact gene-symbol
 overlap describes annotation labels only; it is not orthology, ANI, phylogeny,
 or a core/accessory pangenome analysis.
 
+### Compare individual CDS annotations on the same genome
+
+Use the existing comparison command with `--gene-level` to review changes
+between annotation pipelines or annotation versions on the same genome:
+
+```bash
+annostat compare --gene-level \
+  --genome A genome.fna annotation-a.gff3 \
+  --genome B genome.fna annotation-b.gff3 \
+  -o comparison
+```
+
+This mode requires exactly two annotations, identical FASTA sequence IDs and
+bases, and explicit `+`/`-` CDS strands. FASTA descriptions, wrapping, record
+order, and letter case may differ. Both GFF3 files must use the same unchanged
+assembly coordinates; supplying a FASTA does not prove a GFF3 file's original
+assembly. Rotated circular genomes and changed assemblies require coordinate
+reconciliation before comparison.
+
+The normal outputs remain available. `tables/gene_comparisons.tsv`,
+`comparison.json`, and a new section in `comparison.html` additionally report
+exact CDS models, unique start/stop alternatives, frame disagreements, other
+overlap candidates, ambiguous relationships, unmatched calls, annotation
+attribute changes, and equality of translated protein sequences. CDS sequences
+are processed once per annotation; only compact metadata and protein hashes
+are retained for matching.
+
+All reported coordinates are **1-based inclusive**. Multipart CDSs count once,
+and circular-origin blocks retain their biological order. Positive boundary
+deltas point downstream in the CDS strand direction; circular deltas are only
+reported for exact matches or supported boundary alternatives. Names and locus
+tags do not establish correspondence. A counterpart must overlap on the same
+sequence and strand. Exact models anchor matching, followed by unique,
+frame-compatible boundary alternatives. Other overlaps remain candidates or
+ambiguous relationships; many-to-one relationships are not automatically
+declared split/merge events. RNA features and gene-only pseudogene records are
+outside the CDS matching scope; unambiguous parent-gene attributes are retained.
+
+Exact structural agreement is `2 * E / (N_A + N_B)`, where `N_A` and `N_B` count
+biological CDS models and `E` sums the shared multiplicity of each exact
+structure (ordered coding blocks and phase). Duplicate models can therefore
+agree structurally while their ID correspondence remains ambiguous. Empty CDS
+sets have unavailable agreement, not 100%. Status/relationship counts count
+table rows, not distinct genes. Unmatched calls do not demonstrate biological
+absence, and changed descriptions do not establish conflicting functions.
+The HTML section shows the first 100 relationships requiring review; the TSV
+and JSON retain all relationships. Re-running without `--gene-level` removes
+the generated gene comparison table and returns to the aggregate report.
+
+#### Use the report for annotation review
+
+Start with `comparison.html` for the agreement summary and review preview, then
+use `tables/gene_comparisons.tsv` for the complete side-by-side details:
+
+| Finding | Useful follow-up | Interpretation limit |
+|---|---|---|
+| Exact structure and identical translated protein | Identify unchanged CDS models | Agreement is not independent evidence of correctness |
+| `start_shift` or `stop_shift` | Inspect the boundary and protein-length difference | Neither annotation is automatically preferred |
+| `frame_disagreement` | Inspect phase, coordinates, and source exception annotations | Not proof of a biological frameshift |
+| Identical protein with a changed product description | Separate label changes from protein-sequence changes | Different descriptions do not prove different functions |
+| `unmatched`, `candidate`, or `ambiguous` correspondence | Reconcile calls using the source annotations and external evidence | Not proof of gene absence or a split/merge event |
+
+The complete table includes:
+
+| Column(s) | Meaning |
+|---|---|
+| `dataset_a`, `dataset_b`, `id_a`, `id_b` | Source labels and CDS identifiers |
+| `seqid`, `strand`, `segments_a`, `segments_b`, `phase_a`, `phase_b` | Location and coding structure; segment coordinates are 1-based inclusive |
+| `cds_length_a`, `cds_length_b`, `protein_length_a`, `protein_length_b` | CDS length in nucleotides and translated-protein length in amino acids |
+| `gene_a`, `gene_b`, `product_a`, `product_b`, `dbxref_a`, `dbxref_b` | Side-by-side names, descriptions, and database cross-references when supplied |
+| `overlap_bp`, `start_delta_bp`, `stop_delta_bp` | Shared physical bases and strand-aware boundary shifts from A to B |
+| `protein_identical`, `changed_attributes` | Equality of Annostat-translated protein sequences and the names of differing annotation attributes |
+
+Genetic-code selections, pseudogene/partial markers, and translation-exception
+attributes are also retained. Missing values are empty in TSV and `null` in JSON;
+an unmatched row has no protein-equality result, not a value of `false`.
+The JSON data is under `gene_level_comparison`, with CDS counts, exact-model
+agreement, status/relationship row counts, and the full relationship list.
+
+The HTML preview does not yet display all these columns or rank findings by
+biological importance. Use the TSV or JSON for complete review. Neither the
+agreement percentage nor the relationship labels are accuracy estimates,
+statistical significance tests, or evidence of gene gain/loss between organisms.
+
 ### Compare against external NCBI data
 
 NCBI access is optional and uses NCBI's maintained `datasets` executable. Follow
@@ -398,7 +499,9 @@ local FASTA or GFF3 files.
 
 ## Outputs
 
-The output directory contains:
+### Single-annotation analysis
+
+The `annostat analyze` output directory contains:
 
 ```text
 results/
@@ -435,6 +538,20 @@ verdict. Short CDS overlaps are common in compact bacterial genomes, so ordinary
 overlaps and adjacent duplicate labels are informational. Containment, incomplete
 frames, missing structural RNA classes, internal stops, and ambiguous bases are
 reported as warnings that merit inspection in their biological context.
+
+### Comparison and cohort reports
+
+`annostat compare` writes `comparison.html`, `comparison.json`,
+`tables/dataset_metrics.tsv`, `tables/pairwise_comparisons.tsv`, and SVG plots
+as described in [Comparative analysis](#comparative-analysis). With
+`--gene-level`, it additionally writes `tables/gene_comparisons.tsv` and adds
+the CDS review section and JSON results described
+[above](#compare-individual-cds-annotations-on-the-same-genome). The gene-level
+option does not export a corrected or consensus annotation.
+
+`annostat summarize` writes `cohort.html`, `cohort.tsv`, and `cohort.json` from
+completed single-annotation analyses. It does not aggregate gene-level
+relationship tables.
 
 ## Reproducibility and interpretation
 
@@ -486,6 +603,13 @@ Common problems:
   the first GFF3 column; Annostat intentionally rejects ambiguous pairings.
 - **COG values are unavailable:** the annotation source did not provide COG
   categories. Annostat does not reinterpret missing source data as zero.
+- **`--gene-level` is unrecognized:** check `annostat --version`; this option
+  requires 1.1.0 or newer and belongs to `annostat compare`, not `analyze`.
+- **Gene-level comparison rejects the genomes:** it requires exactly two
+  annotations with identical FASTA identifiers and bases on unchanged assembly
+  coordinates. Different strains, changed assemblies, or rotated circular
+  sequences are not supported without prior coordinate reconciliation. Do not
+  rename identifiers merely to bypass this safeguard.
 - **NCBI download fails:** confirm that the official NCBI Datasets CLI is installed
   and available on `PATH`; local analysis itself never needs network access.
 
@@ -528,7 +652,7 @@ annostat analyze \
 Example output:
 
 ```text
-Annostat 1.0.3 | bacterial genome annotation analysis
+Annostat 1.1.0 | bacterial genome annotation analysis
 FASTA: /path/to/annostat/data/GCF_000007145.1.fna
 GFF3:  /path/to/annostat/data/GCF_000007145.1.gff3
 

@@ -195,6 +195,7 @@ def build_compare_parser() -> argparse.ArgumentParser:
         epilog=(
             "examples:\n"
             "  annostat compare --genome genome-a a.fna a.gff3 --genome genome-b b.fna b.gff3\n"
+            "  annostat compare --gene-level --genome A genome.fna a.gff3 --genome B genome.fna b.gff3\n"
             "  annostat compare --genome sample sample.fna sample.gff3 --reference GCF_000007145.1\n\n"
             "Local assemblies and external NCBI references may be combined. NCBI inputs require the official "
             "NCBI Datasets CLI."
@@ -204,6 +205,10 @@ def build_compare_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--genome", action="append", nargs=3, metavar=("LABEL", "FASTA", "GFF3"),
         help="labelled local genome input; repeat for each dataset",
+    )
+    parser.add_argument(
+        "--gene-level", action="store_true",
+        help="add CDS-by-CDS comparison of exactly two annotations on identical genome sequences",
     )
     parser.add_argument(
         "--reference", "--accession", dest="references", action="append", metavar="GCF_OR_GCA",
@@ -496,6 +501,8 @@ def _main_compare(arguments: list[str]) -> int:
         requested_count = len(datasets) + len(args.references or [])
         if requested_count < 2:
             parser.error("provide at least two inputs using --genome and/or --reference")
+        if args.gene_level and requested_count != 2:
+            parser.error("--gene-level requires exactly two annotations")
         requested_labels = [dataset.label for dataset in datasets] + (args.references or [])
         if len(requested_labels) != len(set(requested_labels)):
             parser.error("comparison genome labels and references must be unique")
@@ -532,7 +539,8 @@ def _main_compare(arguments: list[str]) -> int:
             print(f"[{step}/4] {message}")
 
         summary = run_comparison(
-            datasets, args.output, None if args.quiet else report_progress
+            datasets, args.output, None if args.quiet else report_progress,
+            gene_level=args.gene_level,
         )
     except (OSError, ValueError) as error:
         parser.error(str(error))
@@ -543,6 +551,12 @@ def _main_compare(arguments: list[str]) -> int:
         print(f"  Taxonomic scope          {summary['taxonomic_scope'].replace('_', ' '):>34}")
         print(f"  Pairwise comparisons     {len(summary['pairwise_comparisons']):>34,}")
         print(f"  Interpretation notes     {len(summary['warnings']):>34,}")
+        if args.gene_level:
+            gene_result = summary["gene_level_comparison"]
+            print(f"  Gene relationships       {len(gene_result['relationships']):>34,}")
+            print(f"  Exact CDS models         {gene_result['exact_model_count']:>34,}")
+            counts = ", ".join(f"{name}: {count}" for name, count in gene_result["status_counts"].items())
+            print(f"  CDS correspondence       {counts or 'no CDS models'}")
         print("-" * 60)
         print(f"  Report                   {(args.output / 'comparison.html').resolve()}")
     return 0

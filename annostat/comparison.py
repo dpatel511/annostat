@@ -15,6 +15,10 @@ from urllib.parse import parse_qs, urlparse
 
 from annostat import __version__
 from annostat.analysis import COG_CATEGORY_NAMES, analyze_features
+from annostat.gene_comparison import (
+    GENE_COMPARISON_COLUMNS, CdsModel, cds_model, compare_cds,
+    genome_fingerprint, inherit_cds_attributes,
+)
 from annostat.models import Feature
 from annostat.plots import write_cog_comparison, write_comparison_overview
 from annostat.qc import feature_quality_findings, quality_summary, sequence_quality_findings
@@ -121,7 +125,7 @@ def _taxonomic_relationship(left: dict[str, object], right: dict[str, object]) -
     return "same species" if left_species == right_species else "different species"
 
 
-def _annotation_profile(dataset: GenomeInput) -> dict[str, object]:
+def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = None) -> dict[str, object]:
     """Calculate the normalized comparison profile for one input dataset."""
 
     validated = load_and_validate_annotation(dataset.fasta, dataset.gff)
@@ -137,6 +141,8 @@ def _annotation_profile(dataset: GenomeInput) -> dict[str, object]:
             f"{first['rule_id']}: {first['message']}"
         )
     features = validated.features
+    if models is not None:
+        features = inherit_cds_attributes(features)
     genome = validated.genome
     circular_seqids = frozenset(
         feature.seqid
@@ -162,6 +168,11 @@ def _annotation_profile(dataset: GenomeInput) -> dict[str, object]:
         genetic_code=genetic_code,
     ):
         cds_lengths.append(record.length)
+        if models is not None:
+            models.append(cds_model(
+                record, len(genome[record.feature.seqid]), genetic_code,
+                record.feature.seqid in circular_seqids,
+            ))
         findings.extend(
             sequence_quality_findings(
                 record,
@@ -195,7 +206,7 @@ def _annotation_profile(dataset: GenomeInput) -> dict[str, object]:
     )
     metadata = {**_gff_metadata(dataset.gff), **(dataset.metadata or {})}
     organism_name = metadata.get("organism_name")
-    return {
+    profile = {
         "label": dataset.label,
         "input_source": metadata.get("input_source", "Local files"),
         "organism_name": organism_name,
@@ -250,6 +261,9 @@ def _annotation_profile(dataset: GenomeInput) -> dict[str, object]:
         "gene_symbols": sorted(gene_symbols),
         "cog_ids": sorted(cog_ids),
     }
+    if models is not None:
+        profile["genome_sequence_sha256"] = genome_fingerprint(genome)
+    return profile
 
 
 def _jaccard(left: Iterable[str], right: Iterable[str]) -> float | None:
@@ -328,11 +342,11 @@ def _pairwise_rows(profiles: list[dict[str, object]]) -> list[dict[str, object]]
     return rows
 
 
-def _write_rows(path: Path, rows: list[dict[str, object]]) -> None:
+def _write_rows(path: Path, rows: list[dict[str, object]], fieldnames: Iterable[str] | None = None) -> None:
     """Write dictionaries as a TSV with stable columns and blank null values."""
 
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]), delimiter="\t")
+        writer = csv.DictWriter(handle, fieldnames=fieldnames or list(rows[0]), delimiter="\t")
         writer.writeheader()
         for row in rows:
             writer.writerow({key: "" if value is None else value for key, value in row.items()})
@@ -365,6 +379,31 @@ def _render_report(summary: dict[str, object], plot_paths: list[Path]) -> str:
     """Render a compact, self-contained comparative HTML report."""
 
     profiles = summary["datasets"]
+    gene_panel = ""
+    gene_result = summary.get("gene_level_comparison")
+    dataset_noun = "annotations" if gene_result is not None else "assemblies"
+    dataset_heading = "Annotations" if gene_result is not None else "Assemblies"
+    subtitle = (
+        "Two annotations of identical genome sequences. Structural agreement does not establish biological correctness."
+        if gene_result is not None else
+        "A normalized comparison of annotated bacterial assemblies. Dataset labels do not imply strain-level relatedness."
+    )
+    if gene_result is not None:
+        review = [row for row in gene_result["relationships"] if row["status"] != "matched" or row["relationship"] != "exact" or row["changed_attributes"]]
+        columns = ("id_a", "id_b", "status", "relationship", "start_delta_bp", "stop_delta_bp", "changed_attributes")
+        gene_rows = "".join(
+            "<tr>" + "".join(f'<td>{escape(str(row[key])) if row[key] is not None else "-"}</td>' for key in columns) + "</tr>"
+            for row in review[:100]
+        )
+        agreement = gene_result["exact_agreement"]
+        agreement_label = f"{100 * agreement:.2f}%" if agreement is not None else "n/a (no CDS models)"
+        gene_panel = f'''<section class="panel"><h2>CDS annotation comparison</h2>
+<p>Exact structural agreement: {agreement_label} ({gene_result["exact_model_count"]:,} shared CDS models).
+Coordinates are 1-based inclusive. Positive boundary deltas point downstream in the CDS strand direction.</p>
+<p class="note">{escape(gene_result["scope"])} Exact agreement counts shared model multiplicities; duplicate models can still have ambiguous ID correspondence. Candidate overlaps and ambiguous matches require review.</p>
+<p>Showing {min(len(review), 100):,} of {len(review):,} relationships with structural or annotation differences.
+<a href="tables/gene_comparisons.tsv">Download all CDS relationships (TSV)</a>.</p>
+<div class="table-wrap"><table><thead><tr><th>CDS {escape(str(profiles[0]["label"]))}</th><th>CDS {escape(str(profiles[1]["label"]))}</th><th>Status</th><th>Relationship</th><th>5′ delta (bp)</th><th>3′ delta (bp)</th><th>Changed attributes</th></tr></thead><tbody>{gene_rows}</tbody></table></div></section>'''
     species_count = len(summary["species"])
     scope_label = {
         "mixed_species": f"{species_count} identified species",
@@ -425,11 +464,11 @@ table{{border-collapse:collapse;width:100%;white-space:nowrap}}th{{color:var(--m
 details summary{{cursor:pointer;font-weight:700}}details .table-wrap{{margin-top:14px}}.downloads{{display:flex;gap:18px;flex-wrap:wrap}}a{{color:var(--green);font-weight:600}}footer{{border-top:1px solid var(--line);color:var(--muted);font-size:12px;margin-top:28px;padding-top:16px}}
 @media(max-width:700px){{header span{{display:block;float:none;margin-top:3px}}main{{padding:26px 14px 48px}}h1{{font-size:28px}}.panel,.figure,details,.notice{{padding:14px}}}}@media print{{body{{background:#fff}}main{{max-width:none;padding:12px}}.panel,.figure,details,.notice{{break-inside:avoid}}}}
 </style></head><body><header><strong>Annostat comparison</strong><span>version {escape(str(summary["annostat_version"]))}</span></header><main>
-<h1>Genome annotation comparison</h1><p class="subtitle">A normalized comparison of annotated bacterial assemblies. Dataset labels do not imply strain-level relatedness.</p>
-<div class="tags"><span class="tag">{len(profiles)} assemblies</span><span class="tag">{escape(scope_label)}</span></div>
+<h1>Genome annotation comparison</h1><p class="subtitle">{subtitle}</p>
+<div class="tags"><span class="tag">{len(profiles)} {dataset_noun}</span><span class="tag">{escape(scope_label)}</span></div>
 {warning_panel}
-<section class="panel"><h2>Assemblies</h2><div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Organism</th><th>Input source</th><th>Genetic code</th><th>Genome</th><th>CDS</th><th>GC</th><th>Coding</th><th>COG coverage</th></tr></thead><tbody>{overview_rows}</tbody></table></div></section>
-{figure_sections}
+<section class="panel"><h2>{dataset_heading}</h2><div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Organism</th><th>Input source</th><th>Genetic code</th><th>Genome</th><th>CDS</th><th>GC</th><th>Coding</th><th>COG coverage</th></tr></thead><tbody>{overview_rows}</tbody></table></div></section>
+{figure_sections}{gene_panel}
 <section class="panel"><h2>Pairwise comparison</h2><div class="table-wrap"><table><thead><tr><th>Pair</th><th>Taxonomic scope</th><th>Gene labels</th><th>COG IDs</th><th>COG profile distance</th><th>Start profile distance</th></tr></thead><tbody>{pair_rows}</tbody></table></div>
 <p class="note">Jaccard values range from 0 to 1 and describe exact annotation-label overlap. Profile distances range from 0 (same distribution) to 1 (maximally different). Neither measure establishes orthology, ANI, or phylogeny.</p></section>
 <details><summary>Input sources and reproducibility</summary><div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Assembly</th><th>Annotation</th><th>FASTA</th><th>GFF3</th></tr></thead><tbody>{provenance_rows}</tbody></table></div><p class="note">Complete paths, file checksums, NCBI metadata, and calculation details are retained in comparison.json.</p></details>
@@ -462,17 +501,27 @@ def run_comparison(
     datasets: list[GenomeInput],
     output_dir: Path,
     progress: Callable[[str], None] | None = None,
+    *,
+    gene_level: bool = False,
 ) -> dict[str, object]:
     """Compare labelled genome annotations and write the report package."""
 
     if len(datasets) < 2:
         raise ValueError("comparison requires at least two genomes")
+    if gene_level and len(datasets) != 2:
+        raise ValueError("--gene-level requires exactly two annotations")
     labels = [dataset.label for dataset in datasets]
     if len(labels) != len(set(labels)):
         raise ValueError("comparison genome labels must be unique")
     notify = progress or (lambda message: None)
     notify("Analyzing and quality-checking input genomes")
-    profiles = [_annotation_profile(dataset) for dataset in datasets]
+    models = [[], []] if gene_level else None
+    profiles = [
+        _annotation_profile(dataset, models[index] if models is not None else None)
+        for index, dataset in enumerate(datasets)
+    ]
+    if gene_level and profiles[0]["genome_sequence_sha256"] != profiles[1]["genome_sequence_sha256"]:
+        raise ValueError("--gene-level requires identical genome sequences and sequence IDs; annotation coordinates must refer to the same unchanged assembly")
     notify("Calculating normalized and pairwise comparisons")
     pairwise = _pairwise_rows(profiles)
     source_signatures = {tuple(profile["annotation_sources"]) for profile in profiles}
@@ -509,6 +558,8 @@ def run_comparison(
         "pairwise_comparisons": pairwise,
         "warnings": warnings,
     }
+    if gene_level:
+        summary["gene_level_comparison"] = compare_cds(models[0], models[1], (labels[0], labels[1]))
 
     tables_dir, plots_dir = output_dir / "tables", output_dir / "plots"
     tables_dir.mkdir(parents=True, exist_ok=True)
@@ -516,6 +567,11 @@ def run_comparison(
     notify("Writing comparison tables and scientific figures")
     _write_rows(tables_dir / "dataset_metrics.tsv", _profile_table_rows(profiles))
     _write_rows(tables_dir / "pairwise_comparisons.tsv", pairwise)
+    gene_table = tables_dir / "gene_comparisons.tsv"
+    if gene_level:
+        _write_rows(gene_table, summary["gene_level_comparison"]["relationships"], GENE_COMPARISON_COLUMNS)
+    else:
+        gene_table.unlink(missing_ok=True)
     overview_plot = plots_dir / "dataset_overview.svg"
     cog_plot = plots_dir / "cog_comparison.svg"
     write_comparison_overview(overview_plot, profiles)
