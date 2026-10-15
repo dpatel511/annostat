@@ -8,6 +8,39 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-15
+
+### Added
+
+- Opt-in `annostat compare --gene-level` for two annotations of identical
+  genome sequences, with CDS relationship TSV/JSON results and an offline HTML
+  review section. Matching reports exact structures, boundary alternatives,
+  frame disagreements, ambiguous overlaps, and unmatched calls without
+  interpreting annotation differences as biological absence or accuracy.
+- Side-by-side CDS coordinates, phases, nucleotide/protein lengths, translation
+  tables, selected annotation attributes, boundary deltas, and translated-protein
+  equality in the gene-level TSV and JSON. Coordinates are 1-based inclusive;
+  matching accounts for multipart and circular-origin CDS models.
+
+### Changed
+
+- Document researcher-facing annotation-review workflows, gene-level output
+  fields, correspondence ambiguity, and the distinction between structural
+  agreement, protein equality, and biological correctness.
+- Update installation guidance for the available Bioconda package and align
+  version examples and the manual release-tag default with 1.1.0.
+
+### Fixed
+
+- Reserve plot header space in points so titles, descriptions, and axes do not
+  overlap on short figures.
+
+### Compatibility
+
+- Gene-level comparison is opt-in. Existing aggregate comparisons and
+  single-annotation workflows retain their output formats and schema versions.
+- No additional runtime dependencies are introduced by gene-level comparison.
+
 ## [1.0.3] - 2026-08-23
 
 ### Changed
