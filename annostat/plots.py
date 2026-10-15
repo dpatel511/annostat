@@ -62,6 +62,8 @@ def _new_figure(
 
     figure = Figure(figsize=(width, height), layout="constrained")
     FigureCanvasSVG(figure)
+    # Reserve physical header space even when the figure is short.
+    height_points = 72 * height
     figure.suptitle(
         title,
         x=0.01,
@@ -74,7 +76,7 @@ def _new_figure(
     )
     figure.text(
         0.01,
-        0.955,
+        0.995 - 24 / height_points,
         description,
         ha="left",
         va="top",
@@ -83,7 +85,7 @@ def _new_figure(
     )
     layout = figure.get_layout_engine()
     if layout is not None:
-        layout.set(rect=(0.01, 0.04, 0.99, 0.91))
+        layout.set(rect=(0.01, 0.04, 0.99, 0.955 - 40 / height_points))
     return figure
 
 
