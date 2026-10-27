@@ -11,7 +11,7 @@ from annostat.sequences import recognized_start_codons
 def _percentage(part: int, whole: int) -> str:
     """Format a part-to-whole ratio as a percentage, including zero totals."""
 
-    return f"{100 * part / whole:.2f}%" if whole else "0.00%"
+    return f"{100 * part / whole:.2f}%" if whole else "Not available"
 
 
 def _metric(label: str, value: str, note: str) -> str:
@@ -80,7 +80,7 @@ def render_html_report(
                 _percentage(recognized_starts, cds_count),
                 f'{recognized_starts:,} valid initiators for table {summary["genetic_code"]}',
             ),
-            _metric("Genome GC", f'{quality["genome_gc_percent"]:.2f}%', "whole-genome composition"),
+            _metric("Genome GC", f'{quality["genome_gc_percent"]:.2f}%' if quality["genome_gc_percent"] is not None else "Not available", "canonical-base composition"),
             _metric("Coding density", f'{quality["coding_density_percent"]:.2f}%', "non-duplicated CDS coverage"),
         )
     )

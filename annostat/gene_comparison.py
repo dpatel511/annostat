@@ -5,15 +5,16 @@ from __future__ import annotations
 import hashlib
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
+from itertools import islice
+
+from Bio.Data import CodonTable
 
 from annostat.models import CdsSequence, Feature
+from annostat.consequences import CONSEQUENCE_COLUMNS, protein_consequence
+from annostat.sequences import CDS_ANNOTATION_ATTRIBUTES as _ATTRIBUTES, complete_cds_start, inherit_cds_attributes
 
 
-_ATTRIBUTES = (
-    "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
-    "start_range", "end_range", "transl_except", "exception",
-)
 GENE_COMPARISON_COLUMNS = (
     "dataset_a", "dataset_b", "seqid", "strand", "status", "relationship",
     *(f"{name}_{suffix}" for suffix in ("a", "b") for name in (
@@ -21,25 +22,8 @@ GENE_COMPARISON_COLUMNS = (
         *(attribute.lower() for attribute in _ATTRIBUTES),
     )),
     "overlap_bp", "start_delta_bp", "stop_delta_bp", "protein_identical", "changed_attributes",
+    "start_codon_a", "start_codon_b", *CONSEQUENCE_COLUMNS,
 )
-
-
-def inherit_cds_attributes(features: tuple[Feature, ...]) -> tuple[Feature, ...]:
-    """Include unambiguous parent-gene attributes without changing source records."""
-
-    parents = {feature.id: feature for feature in features if feature.type in {"gene", "pseudogene"}}
-    result = []
-    for feature in features:
-        inherited = {}
-        if feature.type == "CDS":
-            parent_ids = feature.attributes.get("Parent", "").split(",")
-            if len(parent_ids) == 1 and parent_ids[0] in parents:
-                parent = parents[parent_ids[0]]
-                inherited = {key: parent.attributes[key] for key in _ATTRIBUTES if key in parent.attributes}
-                if parent.type == "pseudogene":
-                    inherited["pseudo"] = "true"
-        result.append(replace(feature, attributes={**inherited, **feature.attributes}) if inherited else feature)
-    return tuple(result)
 
 
 def genome_fingerprint(genome: Mapping[str, str]) -> str:
@@ -57,7 +41,7 @@ def genome_fingerprint(genome: Mapping[str, str]) -> str:
 
 @dataclass(frozen=True, slots=True)
 class CdsModel:
-    """Retain coordinates, metadata, and a protein hash rather than sequences.
+    """Retain coordinates, metadata, and translated protein evidence, not DNA.
 
     Each block stores its inclusive start/end and codon-position offset. Blocks
     remain in biological order; this also preserves repeated/slippage segments.
@@ -71,6 +55,15 @@ class CdsModel:
     genetic_code: int
     circular: bool
     sequence_length: int
+    protein: str | None = None
+    start_codon: str | None = None
+    initiator_amino_acid: str | None = None
+
+    def protein_codons(self) -> list[tuple[int, int, int]]:
+        """Map each predicted residue to its ordered 1-based genomic triplet."""
+        positions = (position for start, end, _ in self.blocks for position in (range(start, end + 1) if self.feature.strand == "+" else range(end, start - 1, -1)))
+        coding = islice(positions, self.feature.phase or 0, (self.feature.phase or 0) + 3 * self.protein_length)
+        return list(zip(coding, coding, coding))
 
     @property
     def signature(self) -> tuple:
@@ -114,10 +107,14 @@ def cds_model(record: CdsSequence, sequence_length: int, genetic_code: int, circ
             else:
                 blocks.append((start, end, frame))
             offset += end - start + 1
+    start_codon = record.coding_nucleotide[:3] if len(record.coding_nucleotide) >= 3 else None
+    table = CodonTable.unambiguous_dna_by_id[genetic_code]
+    initiator = table.forward_table.get(start_codon) if record.protein.startswith("M") and complete_cds_start(record.feature) and start_codon in table.start_codons else None
     return CdsModel(
         record.feature, tuple(blocks), record.length, len(record.protein),
         hashlib.sha256(record.protein.encode("ascii")).hexdigest(), genetic_code, circular,
-        sequence_length,
+        sequence_length, record.protein,
+        start_codon, initiator,
     )
 
 
@@ -245,6 +242,15 @@ def _row(left: CdsModel | None, right: CdsModel | None, labels: tuple[str, str],
         "protein_identical": left.protein_sha256 == right.protein_sha256 if left and right else None,
         "changed_attributes": changed,
     })
+    row.update(start_codon_a=left.start_codon if left else None, start_codon_b=right.start_codon if right else None)
+    if status == "matched":
+        boundary = {"start_shift": "N", "stop_shift": "C"}.get(relationship)
+        row.update(protein_consequence(left.protein, right.protein, boundary,
+                                       codons_a=left.protein_codons(), codons_b=right.protein_codons(),
+                                       initiator_a=left.initiator_amino_acid, initiator_b=right.initiator_amino_acid))
+    else:
+        row.update(dict.fromkeys(CONSEQUENCE_COLUMNS))
+        row.update(protein_consequence="unresolved", consequence_note="No accepted one-to-one CDS correspondence; no protein consequence assigned.")
     return row
 
 
@@ -304,12 +310,15 @@ def compare_cds(left: Iterable[CdsModel], right: Iterable[CdsModel], labels: tup
             rows.append(_row(None, b[j], labels, "unmatched"))
     rows.sort(key=lambda row: (row["seqid"], row["strand"], row["id_a"] or "", row["id_b"] or "", row["status"]))
     return {
-        "schema_version": "1.0", "coordinate_system": "1-based inclusive",
+        "schema_version": "1.2", "coordinate_system": "1-based inclusive",
         "scope": "CDS models only; RNA and gene-only pseudogene records are not matched. Unmatched CDS calls do not establish biological absence.",
         "cds_counts": {labels[0]: len(a), labels[1]: len(b)},
         "exact_model_count": exact_count,
         "exact_agreement": 2 * exact_count / (len(a) + len(b)) if a or b else None,
         "status_counts": dict(sorted(Counter(row["status"] for row in rows).items())),
         "relationship_counts": dict(sorted(Counter(row["relationship"] for row in rows).items())),
+        "consequence_counts": dict(sorted(Counter(row["protein_consequence"] for row in rows if row["status"] == "matched").items())),
+        "unmatched_cds_counts": {label: sum(row["status"] == "unmatched" and row[f"id_{suffix}"] is not None for row in rows) for label, suffix in zip(labels, ("a", "b"))},
+        "consequence_methods": "Accepted pairs use ordered genomic codon coordinates, not score-optimized protein alignment. Protein-length and terminal deltas are B minus A. Identity includes gap columns. Initiation-specific mismatches are separated from other non-gap mismatches; neither represents a DNA mutation on these identical assemblies. Unknown/stop residues and unresolved codon mapping are marked limited. Source partial/pseudogene/exception context is not experimental validation.",
         "relationships": rows,
     }

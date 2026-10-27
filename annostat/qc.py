@@ -493,7 +493,7 @@ def quality_summary(
     issue_counts = Counter(finding.issue_type for finding in finding_list)
     severity_counts = Counter(finding.severity for finding in finding_list)
     return {
-        "genome_gc_percent": 100 * gc_bases / canonical_bases if canonical_bases else 0,
+        "genome_gc_percent": 100 * gc_bases / canonical_bases if canonical_bases else None,
         "coding_density_percent": 100 * covered_bases / genome_length if genome_length else 0,
         "cds_per_kb": 1000 * cds_count / genome_length if genome_length else 0,
         "finding_count": len(finding_list),

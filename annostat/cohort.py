@@ -10,7 +10,7 @@ from pathlib import Path
 from annostat import __version__
 
 
-COHORT_SCHEMA_VERSION = "1.0"
+COHORT_SCHEMA_VERSION = "1.1"
 
 
 def discover_summaries(inputs: list[Path]) -> list[Path]:
@@ -60,12 +60,13 @@ def _sample_row(path: Path) -> dict[str, object]:
         "sample": path.parent.name,
         "summary_path": str(path),
         "annostat_version": str(summary.get("annostat_version", "unknown")),
+        "calculation_policy": summary.get("calculation_policy", "legacy / not recorded"),
         "scientific_fingerprint": str(summary.get("scientific_fingerprint", "")),
         "genome_length_bp": int(summary["genome_length"]),
         "sequence_count": len(summary.get("sequence_ids", [])),
         "cds_count": cds_count,
         "rna_count": sum(int(value) for value in summary["rna_counts"].values()),
-        "genome_gc_percent": float(quality["genome_gc_percent"]),
+        "genome_gc_percent": float(quality["genome_gc_percent"]) if quality["genome_gc_percent"] is not None else None,
         "coding_density_percent": float(quality["coding_density_percent"]),
         "hypothetical_cds_percent": _percent(hypothetical, cds_count),
         "cog_coverage_percent": _percent(cog_count, cds_count) if cog_available else None,
@@ -94,12 +95,15 @@ def build_cohort(inputs: list[Path]) -> dict[str, object]:
         )
     rows.sort(key=lambda row: str(row["sample"]).casefold())
     versions = sorted({str(row["annostat_version"]) for row in rows})
+    policies = sorted({row["calculation_policy"] for row in rows})
     return {
         "schema_version": COHORT_SCHEMA_VERSION,
         "annostat_version": __version__,
         "sample_count": len(rows),
         "source_annostat_versions": versions,
         "mixed_source_versions": len(versions) > 1,
+        "source_calculation_policies": policies,
+        "mixed_calculation_policies": len(policies) > 1,
         "samples": rows,
     }
 
@@ -162,6 +166,8 @@ def render_cohort_html(cohort: dict[str, object]) -> str:
         "compare metrics with the recorded version metadata.</aside>"
         if cohort["mixed_source_versions"] else ""
     )
+    if cohort.get("mixed_calculation_policies"):
+        version_note += '<aside class="notice">Inputs use different calculation policies, including legacy summaries. Regenerate analyses consistently before interpreting metric differences.</aside>'
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Annostat cohort report</title><style>

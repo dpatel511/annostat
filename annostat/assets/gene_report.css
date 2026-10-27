@@ -1,0 +1,57 @@
+body.gene-comparison{--ink:#192b3a;--muted:#566777;--line:#dce3e9;--bg:#f6f8fa;--green:#174e75;--soft:#edf3f8;font-family:Segoe UI,Arial,sans-serif}
+.gene-comparison header{background:#fff;color:var(--ink);border-bottom:1px solid var(--line);padding-top:16px;padding-bottom:16px}
+.gene-comparison header span{color:var(--muted)}.gene-comparison main{max-width:1280px;padding:36px 32px 64px}
+.gene-comparison h1{font-size:38px;letter-spacing:-.035em}.gene-versus{font-weight:400;color:var(--muted)}
+.gene-kicker,.gene-eyebrow{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.gene-comparison .subtitle{max-width:850px;margin-bottom:14px}.gene-comparison .tags{margin-bottom:16px}
+.gene-comparison .tag{border-radius:4px;font-weight:500;background:#eaf0f5;color:#36546c}
+.gene-source-notes{font-size:13px;padding:12px 16px;margin-bottom:10px}.gene-source-notes summary{font-weight:500}
+.gene-report{font-variant-numeric:tabular-nums}.gene-nav{position:sticky;top:0;z-index:4;display:flex;gap:26px;flex-wrap:wrap;background:var(--bg);padding:15px 0;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.gene-nav a{font-size:13px;text-decoration:none;color:var(--muted)}.gene-nav a:hover,.gene-nav a:focus{color:var(--green);text-decoration:underline}
+.gene-section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:26px;margin:0 0 22px;scroll-margin-top:78px}
+.gene-section-heading{display:flex;justify-content:space-between;gap:16px;align-items:baseline;margin-bottom:20px;color:var(--muted);font-size:12px}
+.gene-section-heading>span{font-weight:600;letter-spacing:.065em;text-transform:uppercase}.gene-section-heading p{margin:0}
+.gene-report h2{font-size:20px;letter-spacing:-.02em;line-height:1.3;margin:0 0 12px}.gene-report h3{font-size:16px;line-height:1.4;margin:0 0 10px}
+.gene-report .note{font-size:12px;line-height:1.65}.gene-finding h2{font-size:25px;max-width:850px}.gene-finding>p{margin:10px 0}
+.gene-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:24px 0}
+.gene-counts>div{padding:16px 18px;background:#f5f8fa;border-radius:6px}.gene-counts span{display:block;color:var(--muted);font-size:13px}
+.gene-counts strong{display:block;font-size:34px;line-height:1.25;margin:5px 0;color:var(--ink)}.gene-counts small{font-size:12px;color:var(--muted)}
+.gene-sources{display:grid;grid-template-columns:1fr 1fr;gap:20px}.gene-source{padding:16px 18px;border:1px solid var(--line);border-radius:6px}
+.gene-source-label{font-size:13px;font-weight:600;display:block;color:#087f5b;margin-bottom:7px}.gene-source:nth-child(2) .gene-source-label{color:#2563eb}
+.gene-source>strong{font-size:21px}.gene-source strong small{font-size:13px;font-weight:400;color:var(--muted)}.gene-source p{font-size:13px;margin:7px 0 0}
+.gene-profile-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:30px}.gene-profile-grid>div{min-width:0}
+.gene-report table{white-space:normal}.gene-report th{font-size:11px;letter-spacing:.045em}.gene-report th,.gene-report td{padding:12px 10px}
+.gene-outcomes td{vertical-align:top}.gene-outcomes td:first-child{width:70%}.gene-outcomes td p{font-size:12px;line-height:1.6;color:var(--muted);margin:6px 0 0}
+.gene-outcomes td:first-child strong{font-size:13px;font-weight:600}.gene-dot{display:inline-block;width:7px;height:7px;margin:0 7px 1px 0;border-radius:50%;background:#66756d}
+.gene-color-identical{background:#087f5b}.gene-color-terminal_only{background:#2563eb}.gene-color-initiator_recoding{background:#7c3aed}.gene-color-translation_difference{background:#c2410c}
+.gene-outcomes .gene-result-count{text-align:right;white-space:nowrap}.gene-result-count strong{font-size:19px}.gene-result-count small{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.gene-boundaries{font-size:13px}.gene-boundaries th[scope=row]{font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink)}.gene-boundaries td{text-align:right;white-space:nowrap}
+.gene-report .gene-length-heading{margin-top:22px}.gene-length-directions{font-size:13px;margin:8px 0}
+.gene-unresolved{background:#f5f8fa;border-radius:6px;padding:16px;margin-top:20px}.gene-unresolved p{font-size:13px;margin:8px 0}
+.gene-report button,.gene-report select,.gene-report input{font:inherit;border:1px solid #b7c5cf;border-radius:5px;padding:7px 10px;background:#fff;color:var(--ink)}
+.gene-report button{font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}.gene-report button:hover,.gene-report button:focus-visible{background:var(--soft);border-color:var(--green)}
+.gene-report button:focus-visible,.gene-report select:focus-visible,.gene-report input:focus-visible{outline:2px solid var(--green);outline-offset:2px}.gene-report button:disabled{cursor:default;opacity:.45}
+.gene-report .gene-figure{padding:13px 16px;margin:24px 0 0;background:#fff}.gene-figure svg{display:block;width:100%;height:auto;margin-top:20px}
+.gene-controls{display:flex;gap:16px;flex-wrap:wrap;margin:20px 0 16px}.gene-controls label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600}.gene-controls select{font-size:13px;min-width:200px}
+#gene-table{font-size:13px}#gene-table th{white-space:normal}#gene-table td{white-space:pre-line;text-align:left;max-width:300px;overflow-wrap:anywhere;vertical-align:top}
+#gene-table .dt-empty{text-align:center}#gene-table td:first-child{width:74px}#gene-table td:nth-child(2){min-width:170px}#gene-table td:nth-last-child(-n+2){white-space:nowrap}
+.gene-report .dt-layout-row{gap:12px;font-size:13px}.gene-report .dt-input{font-size:13px}.gene-report .dt-search label{color:var(--muted)}
+.gene-detail{border:1px solid var(--line);border-radius:8px;background:#fbfcfd;margin-top:28px;padding:24px;scroll-margin-top:80px}
+.gene-detail h3{font-size:22px;letter-spacing:-.02em}.gene-detail-header p{margin:6px 0;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.gene-detail .gene-interpretation{font-size:15px;border-left:3px solid #315d80;padding:4px 0 4px 16px;margin:20px 0;line-height:1.7}
+.gene-detail-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.gene-detail-stats>div{padding:12px;background:#edf2f6;border-radius:5px}.gene-detail-stats span{font-size:12px;color:var(--muted);display:block}.gene-detail-stats strong{font-size:18px;font-weight:600;display:block;margin-top:5px}
+.gene-detail .gene-flags{font-size:12px;color:#694a20;background:#faf3e8;padding:10px 12px;border-radius:5px;margin:12px 0;overflow-wrap:anywhere}
+.gene-locus{overflow-x:auto;margin:20px 0 10px}.gene-locus svg{width:100%;min-width:720px;height:auto;display:block}
+.gene-detail h4{font-size:14px;margin:22px 0 10px}.gene-detail pre{font:13px/1.7 Consolas,monospace;white-space:pre;overflow-x:auto;background:#f0f4f7;padding:14px;border-radius:5px}
+.gene-detail mark.gene-gap{background:#dfe7ed;color:#364a5a}.gene-detail mark.gene-mismatch{background:#ffe7b5;color:#684208}
+.gene-detail .gene-alignment-legend{font-size:12px;color:var(--muted)}.gene-alignment-legend span{display:inline-block;margin-right:16px}.gene-alignment-legend b{font-weight:500;padding:1px 4px}
+.gene-alignment-legend .gene-gap{background:#dfe7ed}.gene-alignment-legend .gene-mismatch{background:#ffe7b5}
+.gene-models{font-size:13px;table-layout:fixed;min-width:540px}.gene-models th,.gene-models td{text-align:left;overflow-wrap:anywhere;vertical-align:top}
+.gene-models th:first-child{width:28%;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);font-weight:500}
+.gene-detail details{margin:16px 0;background:transparent;padding:13px 16px}.gene-detail details summary{font-size:13px;font-weight:600}
+.gene-measurements{font-size:13px;min-width:0}.gene-measurements th[scope=row]{text-transform:none;font-size:12px;letter-spacing:0;text-align:left;font-weight:500}
+.gene-measurements td{text-align:right}.gene-license{white-space:pre-wrap;font-size:11px;overflow-wrap:anywhere}.gene-report .downloads{font-size:13px;margin-top:22px}
+@media(max-width:1000px){.gene-profile-grid{grid-template-columns:1fr}.gene-detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.gene-comparison main{padding:24px 14px 44px}.gene-comparison h1{font-size:30px}.gene-section{padding:18px 16px}.gene-section-heading{display:block}.gene-section-heading p{margin-top:5px}.gene-finding h2{font-size:22px}.gene-nav{gap:10px 18px;padding:12px 0}.gene-counts{grid-template-columns:1fr;gap:8px;margin:18px 0}.gene-counts>div{padding:12px 14px}.gene-counts strong{font-size:28px}.gene-sources{grid-template-columns:1fr;gap:12px}.gene-controls{gap:12px}.gene-controls label,.gene-controls select{width:100%}.gene-outcomes th,.gene-outcomes td{padding:10px 5px}.gene-outcomes td:first-child{width:auto}.gene-outcomes button{font-size:11px;padding:6px}.gene-detail{padding:16px 12px}.gene-detail h3{font-size:19px}.gene-detail-stats{gap:8px}.gene-detail-stats strong{font-size:16px}.gene-detail .gene-interpretation{font-size:14px}}
+@media print{.gene-nav,.gene-controls,.dt-layout-row,#gene-table button,.gene-outcomes button,.gene-unresolved button{display:none}.gene-comparison main{max-width:none;padding:12px}.gene-section,.gene-detail{break-inside:auto}.gene-detail{background:#fff}.gene-detail-stats>div{border:1px solid var(--line)}.gene-locus svg{min-width:0}}
