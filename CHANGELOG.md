@@ -6,10 +6,19 @@ and command-line executable retain the lowercase technical name `annostat`.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-27
 
 ### Added
 
+- Opt-in `annostat compare --gene-level` for two annotations of identical
+  genome sequences, with CDS relationship TSV/JSON results and an offline HTML
+  review section. Matching reports exact structures, boundary alternatives,
+  frame disagreements, ambiguous overlaps, and unmatched calls without
+  interpreting annotation differences as biological absence or accuracy.
+- Side-by-side CDS coordinates, phases, nucleotide/protein lengths, translation
+  tables, selected annotation attributes, boundary deltas, and translated-protein
+  equality. Coordinates are 1-based inclusive; matching accounts for multipart
+  and circular-origin CDS models.
 - Coordinate-preserving protein consequences for resolved CDS pairs, including
   terminal differences, initiator-methionine recoding, other translation-context
   differences, signed amino-acid deltas, and codon-mapped mismatch/gap counts.
@@ -29,6 +38,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Separate CLI progress and diagnostics on stderr from final summaries on stdout.
+  Comparison output explicitly identifies aggregate versus gene-level mode and
+  reports accepted CDS pairs, protein consequences, denominators, and unmatched
+  calls. Expected runtime failures use concise errors without a usage dump.
+- Document researcher-facing annotation-review workflows, interpretation limits,
+  installation through Bioconda, and the manual release-tag default of 1.1.0.
 - Redesign gene-level HTML as a scientific findings brief: per-source pairing
   coverage, explicit protein/structural denominators, length-shift descriptives,
   direct category-to-evidence navigation, and readable gene details with separate
@@ -43,6 +58,10 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Handle validation output-write failures without an unhandled traceback; show
+  validation failure thresholds, exit status, and a bounded diagnostic preview.
+- Reserve plot header space in points so titles, descriptions, and axes do not
+  overlap on short figures.
 - Apply unambiguous parent-gene attributes consistently before translation, QC,
   and counting in all analysis/comparison modes, with explicit CDS values taking
   precedence; disclose mixed legacy/current calculation policies in cohorts.
@@ -53,38 +72,14 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Distinguish stop-codon reassignment at unchanged CDS boundaries from an actual
   terminal boundary change.
 
-## [1.1.0] - 2026-10-15
-
-### Added
-
-- Opt-in `annostat compare --gene-level` for two annotations of identical
-  genome sequences, with CDS relationship TSV/JSON results and an offline HTML
-  review section. Matching reports exact structures, boundary alternatives,
-  frame disagreements, ambiguous overlaps, and unmatched calls without
-  interpreting annotation differences as biological absence or accuracy.
-- Side-by-side CDS coordinates, phases, nucleotide/protein lengths, translation
-  tables, selected annotation attributes, boundary deltas, and translated-protein
-  equality in the gene-level TSV and JSON. Coordinates are 1-based inclusive;
-  matching accounts for multipart and circular-origin CDS models.
-
-### Changed
-
-- Document researcher-facing annotation-review workflows, gene-level output
-  fields, correspondence ambiguity, and the distinction between structural
-  agreement, protein equality, and biological correctness.
-- Update installation guidance for the available Bioconda package and align
-  version examples and the manual release-tag default with 1.1.0.
-
-### Fixed
-
-- Reserve plot header space in points so titles, descriptions, and axes do not
-  overlap on short figures.
-
 ### Compatibility
 
 - Gene-level comparison is opt-in. Existing aggregate comparisons and
-  single-annotation workflows retain their output formats and schema versions.
-- No additional runtime dependencies are introduced by gene-level comparison.
+  single-annotation workflows remain available; consumers should account for
+  the schema updates and unavailable values described above.
+- Runtime dependencies are Matplotlib >=3.10 and Biopython >=1.85.
+- CLI progress moves from stdout to stderr. Exit statuses remain 0 for success,
+  1 for a reached validation threshold, and 2 for invalid options or runtime errors.
 
 ## [1.0.3] - 2026-08-23
 
