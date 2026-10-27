@@ -94,7 +94,7 @@ def analyze_features(features: Iterable[Feature]) -> dict[str, object]:
         hypothetical_cds_count += (
             "hypothetical protein" in feature.attributes.get("product", "").lower()
         )
-        cds_with_gene_count += "gene" in feature.attributes
+        cds_with_gene_count += bool(feature.attributes.get("gene", "").strip())
         categories = cog_categories(feature)
         cds_with_cog_count += bool(categories)
         cog_counts.update(categories)

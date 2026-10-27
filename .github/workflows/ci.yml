@@ -117,3 +117,4 @@ jobs:
         run: |
           python -c "import glob, tarfile; n=tarfile.open(glob.glob('dist/*.tar.gz')[0]).getnames(); assert any(x.endswith('/README.md') for x in n); assert any(x.endswith('/LICENSE') for x in n)"
           python -c "import glob, zipfile; n=zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist(); assert 'annostat/cli.py' in n; assert not any('/__pycache__/' in x for x in n)"
+          python -c "import glob, zipfile; n=zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist(); assert all('annostat/assets/'+f in n for f in ['datatables-3.1.4.min.js', 'datatables-3.1.4.min.css', 'datatables-LICENSE.txt', 'gene_report.js', 'gene_report.css'])"

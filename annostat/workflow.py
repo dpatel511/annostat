@@ -29,6 +29,8 @@ from annostat.qc import (
 )
 from annostat.report import render_html_report
 from annostat.sequences import (
+    CALCULATION_POLICY,
+    inherit_cds_attributes,
     declared_genetic_codes,
     iter_cds_sequences,
     recognized_start_codons,
@@ -37,7 +39,7 @@ from annostat.sequences import (
 from annostat.validation import load_and_validate_annotation, write_validation
 
 
-ANALYSIS_SCHEMA_VERSION = "1.0"
+ANALYSIS_SCHEMA_VERSION = "1.1"
 
 
 def _scientific_fingerprint(summary: dict[str, object]) -> str:
@@ -105,7 +107,7 @@ def _run_analysis(
             f"input validation failed with {len(errors)} error(s): "
             f"{first['rule_id']}: {first['message']}"
         )
-    features = validated.features
+    features = inherit_cds_attributes(validated.features)
     genome = validated.genome
     declared_codes = declared_genetic_codes(features)
     selected_genetic_code = resolve_genetic_code(features, genetic_code)
@@ -192,6 +194,7 @@ def _run_analysis(
     stage_started = perf_counter()
     summary = analyze_features(features)
     summary["schema_version"] = ANALYSIS_SCHEMA_VERSION
+    summary["calculation_policy"] = CALCULATION_POLICY
     summary["cog_data_available"] = bool(summary["cog_category_counts"])
     summary["annostat_version"] = __version__
     summary["genetic_code"] = selected_genetic_code

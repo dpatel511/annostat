@@ -52,6 +52,27 @@ def _short_label(value: object, maximum: int = 36) -> str:
     return label if len(label) <= maximum else label[: maximum - 1] + "…"
 
 
+def write_gene_consequences(path: Path, result: dict) -> None:
+    """Plot descriptive protein consequences with an explicit resolved-pair denominator."""
+    from annostat.gene_report import CONSEQUENCE_LABELS
+
+    matched = result["status_counts"].get("matched", 0)
+    title = "Protein consequences of annotation differences"
+    description = f"{matched:,} resolved one-to-one CDS pairs; genomic codons remain fixed. Not functional-impact predictions."
+    with mpl.rc_context(_STYLE):
+        figure = _new_figure(10.5, 4.5, title, description)
+        axis = figure.subplots()
+        values = [result["consequence_counts"].get(key, 0) for key in CONSEQUENCE_LABELS]
+        bars = axis.barh(list(CONSEQUENCE_LABELS.values()), values, color=(_GREEN, _BLUE, _PURPLE, _ORANGE, _MUTED), height=0.6)
+        axis.invert_yaxis()
+        axis.set_xlim(0, max(1, max(values)) * 1.18)
+        axis.xaxis.set_major_locator(MaxNLocator(integer=True))
+        axis.set_xlabel("Resolved CDS pairs (count)")
+        axis.bar_label(bars, labels=[f"{value:,} / {matched:,}" for value in values], padding=6, fontsize=9)
+        _style_axes(axis)
+        _save_svg(figure, path, title, description)
+
+
 def _new_figure(
     width: float,
     height: float,
@@ -342,8 +363,8 @@ def write_comparison_overview(
             available_values = [
                 float(profile[key])
                 for profile in profiles
-                if key != "cog_coverage_percent"
-                or profile.get("cog_data_available", True)
+                if profile.get(key) is not None
+                and (key != "cog_coverage_percent" or profile.get("cog_data_available", True))
             ]
             maximum = max(available_values, default=1)
             scale_max = 100.0 if suffix == "%" else max(1.0, maximum * 1.12)
@@ -357,8 +378,8 @@ def write_comparison_overview(
 
             for profile_index, profile in enumerate(profiles):
                 if (
-                    key == "cog_coverage_percent"
-                    and not profile.get("cog_data_available", True)
+                    profile.get(key) is None
+                    or (key == "cog_coverage_percent" and not profile.get("cog_data_available", True))
                 ):
                     axis.text(
                         scale_max * 1.01,

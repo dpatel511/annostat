@@ -271,7 +271,7 @@ def _positive_int(value: str) -> int:
 def _percentage(part: int, whole: int) -> str:
     """Format a part-to-whole ratio as a percentage, including zero totals."""
 
-    return f"{100 * part / whole:.2f}%" if whole else "0.00%"
+    return f"{100 * part / whole:.2f}%" if whole else "not available"
 
 
 def _print_summary(summary: dict[str, object], output_dir: Path, elapsed: float) -> None:
@@ -295,7 +295,7 @@ def _print_summary(summary: dict[str, object], output_dir: Path, elapsed: float)
         ("Features", f"{int(summary['total_features']):,}"),
         ("CDS", f"{cds_count:,}"),
         ("RNA features", f"{rna_count:,}"),
-        ("Genome GC", f"{quality['genome_gc_percent']:.2f}%"),
+        ("Genome GC", f"{quality['genome_gc_percent']:.2f}%" if quality['genome_gc_percent'] is not None else "not available"),
         ("Coding density", f"{quality['coding_density_percent']:.2f}%"),
         (
             "Hypothetical CDS",

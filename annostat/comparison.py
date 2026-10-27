@@ -20,9 +20,11 @@ from annostat.gene_comparison import (
     genome_fingerprint, inherit_cds_attributes,
 )
 from annostat.models import Feature
-from annostat.plots import write_cog_comparison, write_comparison_overview
+from annostat.gene_report import gene_text_report, render_gene_report
+from annostat.plots import write_cog_comparison, write_comparison_overview, write_gene_consequences
 from annostat.qc import feature_quality_findings, quality_summary, sequence_quality_findings
 from annostat.sequences import (
+    CALCULATION_POLICY,
     declared_genetic_codes,
     iter_cds_sequences,
     recognized_start_codons,
@@ -140,9 +142,7 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
             f"dataset {dataset.label!r} failed validation with {len(errors)} error(s): "
             f"{first['rule_id']}: {first['message']}"
         )
-    features = validated.features
-    if models is not None:
-        features = inherit_cds_attributes(features)
+    features = inherit_cds_attributes(validated.features)
     genome = validated.genome
     circular_seqids = frozenset(
         feature.seqid
@@ -208,6 +208,7 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
     organism_name = metadata.get("organism_name")
     profile = {
         "label": dataset.label,
+        "calculation_policy": CALCULATION_POLICY,
         "input_source": metadata.get("input_source", "Local files"),
         "organism_name": organism_name,
         "species_name": _species_name(str(organism_name)) if organism_name else None,
@@ -239,15 +240,15 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
         "gc_percent": quality["genome_gc_percent"],
         "coding_density_percent": quality["coding_density_percent"],
         "cds_per_mb": 1_000_000 * cds_count / genome_length if genome_length else 0,
-        "median_cds_length": median(cds_lengths) if cds_lengths else 0,
-        "hypothetical_percent": 100 * int(feature_summary["hypothetical_cds_count"]) / cds_count if cds_count else 0,
-        "gene_name_percent": 100 * int(feature_summary["cds_with_gene_count"]) / cds_count if cds_count else 0,
+        "median_cds_length": median(cds_lengths) if cds_lengths else None,
+        "hypothetical_percent": 100 * int(feature_summary["hypothetical_cds_count"]) / cds_count if cds_count else None,
+        "gene_name_percent": 100 * int(feature_summary["cds_with_gene_count"]) / cds_count if cds_count else None,
         "cog_coverage_percent": (
             100 * int(feature_summary["cds_with_cog_count"]) / cds_count
             if cds_count and cog_data_available else None
         ),
         "cog_data_available": cog_data_available,
-        "recognized_start_percent": 100 * recognized_starts / cds_count if cds_count else 0,
+        "recognized_start_percent": 100 * recognized_starts / cds_count if cds_count else None,
         "qc_warning_count": quality["severity_counts"].get("warning", 0),
         "qc_issue_counts": quality["issue_counts"],
         "cog_category_percentages": {
@@ -318,7 +319,7 @@ def _pairwise_rows(profiles: list[dict[str, object]]) -> list[dict[str, object]]
                 "gene_symbol_jaccard": _jaccard(left["gene_symbols"], right["gene_symbols"]),
                 "cog_id_jaccard": (
                     _jaccard(left["cog_ids"], right["cog_ids"])
-                    if left["cog_data_available"] and right["cog_data_available"]
+                    if left["cog_ids"] and right["cog_ids"]
                     else None
                 ),
                 "cog_profile_distance": _jensen_shannon(
@@ -389,21 +390,8 @@ def _render_report(summary: dict[str, object], plot_paths: list[Path]) -> str:
         "A normalized comparison of annotated bacterial assemblies. Dataset labels do not imply strain-level relatedness."
     )
     if gene_result is not None:
-        review = [row for row in gene_result["relationships"] if row["status"] != "matched" or row["relationship"] != "exact" or row["changed_attributes"]]
-        columns = ("id_a", "id_b", "status", "relationship", "start_delta_bp", "stop_delta_bp", "changed_attributes")
-        gene_rows = "".join(
-            "<tr>" + "".join(f'<td>{escape(str(row[key])) if row[key] is not None else "-"}</td>' for key in columns) + "</tr>"
-            for row in review[:100]
-        )
-        agreement = gene_result["exact_agreement"]
-        agreement_label = f"{100 * agreement:.2f}%" if agreement is not None else "n/a (no CDS models)"
-        gene_panel = f'''<section class="panel"><h2>CDS annotation comparison</h2>
-<p>Exact structural agreement: {agreement_label} ({gene_result["exact_model_count"]:,} shared CDS models).
-Coordinates are 1-based inclusive. Positive boundary deltas point downstream in the CDS strand direction.</p>
-<p class="note">{escape(gene_result["scope"])} Exact agreement counts shared model multiplicities; duplicate models can still have ambiguous ID correspondence. Candidate overlaps and ambiguous matches require review.</p>
-<p>Showing {min(len(review), 100):,} of {len(review):,} relationships with structural or annotation differences.
-<a href="tables/gene_comparisons.tsv">Download all CDS relationships (TSV)</a>.</p>
-<div class="table-wrap"><table><thead><tr><th>CDS {escape(str(profiles[0]["label"]))}</th><th>CDS {escape(str(profiles[1]["label"]))}</th><th>Status</th><th>Relationship</th><th>5′ delta (bp)</th><th>3′ delta (bp)</th><th>Changed attributes</th></tr></thead><tbody>{gene_rows}</tbody></table></div></section>'''
+        consequence_plot = next(path for path in plot_paths if path.name == "gene_consequences.svg")
+        gene_panel = render_gene_report(summary, consequence_plot)
     species_count = len(summary["species"])
     scope_label = {
         "mixed_species": f"{species_count} identified species",
@@ -417,7 +405,7 @@ Coordinates are 1-based inclusive. Positive boundary deltas point downstream in 
         f'<td>{escape(str(profile["input_source"]))}</td>'
         f'<td>{profile["genetic_code"]}</td>'
         f'<td>{profile["genome_length"]:,} bp</td><td>{profile["cds_count"]:,}</td>'
-        f'<td>{profile["gc_percent"]:.2f}%</td><td>{profile["coding_density_percent"]:.2f}%</td>'
+        f'<td>{_display_percent(profile["gc_percent"])}</td><td>{_display_percent(profile["coding_density_percent"])}</td>'
         f'<td>{_display_cog_coverage(profile)}</td></tr>'
         for profile in profiles
     )
@@ -436,10 +424,12 @@ Coordinates are 1-based inclusive. Positive boundary deltas point downstream in 
         warning_items = "".join(
             f"<li>{escape(warning)}</li>" for warning in summary["warnings"]
         )
-        warning_panel = f'<aside class="notice"><strong>Interpret carefully</strong><ul>{warning_items}</ul></aside>'
+        warning_panel = (f'<details class="gene-source-notes"><summary>Source context · {len(summary["warnings"])} notes</summary><ul>{warning_items}</ul></details>'
+                         if gene_result is not None else
+                         f'<aside class="notice"><strong>Interpret carefully</strong><ul>{warning_items}</ul></aside>')
     figure_sections = "".join(
         f'<section class="figure">{path.read_text(encoding="utf-8")}</section>'
-        for path in plot_paths
+        for path in plot_paths if path.name != "gene_consequences.svg"
     )
     provenance_rows = "".join(
         "<tr>"
@@ -450,6 +440,11 @@ Coordinates are 1-based inclusive. Positive boundary deltas point downstream in 
         f'<td>{escape(Path(profile["inputs"]["gff3"]).name)}</td></tr>'
         for profile in profiles
     )
+    heading = "<h1>Genome annotation comparison</h1>"
+    tags = f'<span class="tag">{len(profiles)} {dataset_noun}</span><span class="tag">{escape(scope_label)}</span>'
+    if gene_result is not None:
+        heading = f'<p class="gene-kicker">CDS annotation comparison</p><h1>{escape(str(profiles[0]["label"]))}<span class="gene-versus"> vs </span>{escape(str(profiles[1]["label"]))}</h1>'
+        tags = '<span class="tag">2 annotations</span><span class="tag">Identical FASTA sequences</span><span class="tag">Genomic coordinates: 1-based inclusive</span>'
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Annostat comparison report</title><style>
@@ -463,16 +458,19 @@ table{{border-collapse:collapse;width:100%;white-space:nowrap}}th{{color:var(--m
 .figure svg{{display:block;height:auto;max-width:100%;width:100%}}.notice{{background:var(--warn);border-color:var(--warn-line)}}.notice ul{{margin:8px 0 0;padding-left:20px}}.note{{color:var(--muted);font-size:13px}}
 details summary{{cursor:pointer;font-weight:700}}details .table-wrap{{margin-top:14px}}.downloads{{display:flex;gap:18px;flex-wrap:wrap}}a{{color:var(--green);font-weight:600}}footer{{border-top:1px solid var(--line);color:var(--muted);font-size:12px;margin-top:28px;padding-top:16px}}
 @media(max-width:700px){{header span{{display:block;float:none;margin-top:3px}}main{{padding:26px 14px 48px}}h1{{font-size:28px}}.panel,.figure,details,.notice{{padding:14px}}}}@media print{{body{{background:#fff}}main{{max-width:none;padding:12px}}.panel,.figure,details,.notice{{break-inside:avoid}}}}
-</style></head><body><header><strong>Annostat comparison</strong><span>version {escape(str(summary["annostat_version"]))}</span></header><main>
-<h1>Genome annotation comparison</h1><p class="subtitle">{subtitle}</p>
-<div class="tags"><span class="tag">{len(profiles)} {dataset_noun}</span><span class="tag">{escape(scope_label)}</span></div>
+</style></head><body{' class="gene-comparison"' if gene_result is not None else ''}><header><strong>Annostat comparison</strong><span>version {escape(str(summary["annostat_version"]))}</span></header><main>
+{heading}<p class="subtitle">{subtitle}</p>
+<div class="tags">{tags}</div>
 {warning_panel}
+{gene_panel}
+{'<details><summary>Aggregate annotation profiles (secondary)</summary>' if gene_result is not None else ''}
 <section class="panel"><h2>{dataset_heading}</h2><div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Organism</th><th>Input source</th><th>Genetic code</th><th>Genome</th><th>CDS</th><th>GC</th><th>Coding</th><th>COG coverage</th></tr></thead><tbody>{overview_rows}</tbody></table></div></section>
-{figure_sections}{gene_panel}
+{figure_sections}
 <section class="panel"><h2>Pairwise comparison</h2><div class="table-wrap"><table><thead><tr><th>Pair</th><th>Taxonomic scope</th><th>Gene labels</th><th>COG IDs</th><th>COG profile distance</th><th>Start profile distance</th></tr></thead><tbody>{pair_rows}</tbody></table></div>
 <p class="note">Jaccard values range from 0 to 1 and describe exact annotation-label overlap. Profile distances range from 0 (same distribution) to 1 (maximally different). Neither measure establishes orthology, ANI, or phylogeny.</p></section>
+{'</details>' if gene_result is not None else ''}
 <details><summary>Input sources and reproducibility</summary><div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Assembly</th><th>Annotation</th><th>FASTA</th><th>GFF3</th></tr></thead><tbody>{provenance_rows}</tbody></table></div><p class="note">Complete paths, file checksums, NCBI metadata, and calculation details are retained in comparison.json.</p></details>
-<section class="panel"><h2>Download results</h2><div class="downloads"><a href="tables/dataset_metrics.tsv">Dataset metrics</a><a href="tables/pairwise_comparisons.tsv">Pairwise comparisons</a><a href="comparison.json">Complete JSON</a>{''.join(f'<a href="plots/{escape(path.name)}">{escape(path.stem.replace("_", " ").title())} (SVG)</a>' for path in plot_paths)}</div></section>
+<section class="panel" id="report-data"><h2>Download results</h2><div class="downloads"><a href="tables/dataset_metrics.tsv">Dataset metrics</a><a href="tables/pairwise_comparisons.tsv">Pairwise comparisons</a><a href="comparison.json">Complete JSON</a>{''.join(f'<a href="plots/{escape(path.name)}">{escape(path.stem.replace("_", " ").title())} (SVG)</a>' for path in plot_paths)}</div></section>
 <footer>Generated locally by Annostat. The report contains no external scripts or network resources.</footer>
 </main></body></html>"""
 
@@ -481,6 +479,11 @@ def _display_similarity(value: float | None) -> str:
     """Format an optional similarity value for HTML."""
 
     return f"{value:.3f}" if value is not None else "n/a"
+
+
+def _display_percent(value: float | None) -> str:
+    """Distinguish an undefined percentage from a measured zero."""
+    return f"{value:.2f}%" if value is not None else "Not available"
 
 
 def _display_cog_coverage(profile: dict[str, object]) -> str:
@@ -547,9 +550,11 @@ def run_comparison(
         )
     if any(not profile["cog_data_available"] for profile in profiles):
         warnings.append(
-            "At least one annotation source does not provide COG categories. COG coverage, overlap, distances, and comparative plots involving that dataset are not available."
+            "At least one annotation source does not provide COG categories. Category coverage, profile distances, and category plots involving that dataset are not available. COG-ID overlap is evaluated separately when both sources supply IDs."
         )
     summary = {
+        "schema_version": "1.1",
+        "calculation_policy": CALCULATION_POLICY,
         "annostat_version": __version__,
         "analysis_type": "comparative_annotation_profile",
         "taxonomic_scope": taxonomic_scope,
@@ -580,6 +585,15 @@ def run_comparison(
     if all(profile["cog_data_available"] for profile in profiles):
         write_cog_comparison(cog_plot, profiles, COG_CATEGORY_NAMES)
         plot_paths.append(cog_plot)
+    consequence_plot = plots_dir / "gene_consequences.svg"
+    text_report = output_dir / "comparison.txt"
+    if gene_level:
+        write_gene_consequences(consequence_plot, summary["gene_level_comparison"])
+        plot_paths.insert(0, consequence_plot)
+        text_report.write_text(gene_text_report(summary), encoding="utf-8")
+    else:
+        consequence_plot.unlink(missing_ok=True)
+        text_report.unlink(missing_ok=True)
     notify("Building the offline comparative report")
     (output_dir / "comparison.html").write_text(
         _render_report(summary, plot_paths), encoding="utf-8"

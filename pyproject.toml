@@ -9,7 +9,7 @@ description = "Analyze bacterial genome annotations from GFF3 and FASTA files"
 authors = [
     { name = "Dev Patel", email = "dev.patel@stud.uni-giessen.de" },
 ]
-dependencies = ["matplotlib>=3.10"]
+dependencies = ["matplotlib>=3.10", "biopython>=1.85"]
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -41,3 +41,6 @@ annostat = "annostat.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["annostat*"]
+
+[tool.setuptools.package-data]
+annostat = ["assets/*"]

@@ -5,8 +5,41 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, MutableMapping
+from dataclasses import replace
 
 from annostat.models import CdsSequence, Feature
+
+
+CALCULATION_POLICY = "annotation-metrics-1.1"
+CDS_ANNOTATION_ATTRIBUTES = (
+    "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
+    "start_range", "end_range", "transl_except", "exception",
+)
+
+
+def inherit_cds_attributes(features: tuple[Feature, ...]) -> tuple[Feature, ...]:
+    """Use unambiguous parent-gene context consistently, without editing inputs."""
+    parents = {feature.id: feature for feature in features if feature.type in {"gene", "pseudogene"}}
+    result = []
+    for feature in features:
+        inherited = {}
+        if feature.type == "CDS":
+            parent_ids = feature.attributes.get("Parent", "").split(",")
+            if len(parent_ids) == 1 and parent_ids[0] in parents:
+                parent = parents[parent_ids[0]]
+                inherited = {key: parent.attributes[key] for key in CDS_ANNOTATION_ATTRIBUTES if key in parent.attributes}
+                if parent.type == "pseudogene":
+                    inherited["pseudo"] = "true"
+        result.append(replace(feature, attributes={**inherited, **feature.attributes}) if inherited else feature)
+    return tuple(result)
+
+
+def complete_cds_start(feature: Feature) -> bool:
+    """Whether source attributes permit initiator recoding at the first codon."""
+    attributes = feature.attributes
+    boundary = "end_range" if feature.strand == "-" else "start_range"
+    generic_partial = attributes.get("partial", "").strip().lower() in {"1", "true", "yes"} and not ({"start_range", "end_range"} & attributes.keys())
+    return boundary not in attributes and not generic_partial
 
 
 _COMPLEMENT = str.maketrans("ACGTRYMKBDHVNacgtrymkbdhvn", "TGCAYRKMVHDBNtgcayrkmvhdbn")
@@ -327,18 +360,11 @@ def iter_cds_sequences(
         if start_counts is not None and len(coding_nucleotide) >= 3:
             start = coding_nucleotide[:3].upper()
             start_counts[start] = start_counts.get(start, 0) + 1
-        attributes = feature.attributes
-        boundary_marker = "end_range" if feature.strand == "-" else "start_range"
-        generic_partial = (
-            attributes.get("partial", "").strip().lower() in {"1", "true", "yes"}
-            and "start_range" not in attributes
-            and "end_range" not in attributes
-        )
         protein = translate_dna(
             coding_nucleotide,
             codon_counts=codon_counts,
             genetic_code=genetic_code,
-            complete_start=boundary_marker not in attributes and not generic_partial,
+            complete_start=complete_cds_start(feature),
         )
         protein, exception_indices = _apply_translation_exceptions(
             protein,
