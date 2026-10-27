@@ -130,7 +130,8 @@ class GeneComparisonTests(unittest.TestCase):
         output = self.root / "cli"
         completed = subprocess.run(command + ["--gene-level", "-o", str(output)], capture_output=True, text=True)
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("Gene relationships", completed.stdout)
+        self.assertIn("Relationship rows", completed.stdout)
+        self.assertIn("Accepted CDS pairs", completed.stdout)
         saved = json.loads((output / "comparison.json").read_text(encoding="utf-8"))
         with (output / "tables" / "gene_comparisons.tsv").open(encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle, delimiter="\t"))

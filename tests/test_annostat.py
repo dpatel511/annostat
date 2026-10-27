@@ -976,7 +976,8 @@ class AnnostatTests(unittest.TestCase):
             )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("[1/5] Reading GFF3", result.stdout)
+        self.assertIn("[1/5] Reading GFF3", result.stderr)
+        self.assertNotIn("[1/5]", result.stdout)
         self.assertIn("Analysis summary", result.stdout)
         self.assertIn("Recognized starts", result.stdout)
         self.assertEqual(quiet_result.returncode, 0, quiet_result.stderr)
