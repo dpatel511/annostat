@@ -8,6 +8,51 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Coordinate-preserving protein consequences for resolved CDS pairs, including
+  terminal differences, initiator-methionine recoding, other translation-context
+  differences, signed amino-acid deltas, and codon-mapped mismatch/gap counts.
+  Unknown/stop-containing translations and unresolved codon correspondence are
+  marked limited, without arbitrary protein gap placement.
+- Complete offline searchable/filterable/paginated gene relationship table,
+  source-model detail, downloadable locus SVG, and changed/full protein
+  alignments. DataTables 3.1.4 and its MIT license are bundled locally.
+- Gene-level `comparison.txt` interpretation summary and editable
+  `plots/gene_consequences.svg`, with resolved-pair denominators and unresolved
+  correspondence reported separately.
+- Review guidance and text examples grouped by terminal boundary changes,
+  translation context, limited protein evidence, and unresolved correspondence;
+  retain uncertain cases alongside measured changes, with explicit coordinates.
+- A WSL demo script and walkthrough contrasting aggregate and gene-level reports,
+  with verified Bacillus Bakta/RefSeq examples and biological interpretation limits.
+
+### Changed
+
+- Redesign gene-level HTML as a scientific findings brief: per-source pairing
+  coverage, explicit protein/structural denominators, length-shift descriptives,
+  direct category-to-evidence navigation, and readable gene details with separate
+  gap/mismatch highlighting and expandable source context. Stored evidence and
+  aggregate-mode reports retain their scientific calculations.
+- Gene-level schema is 1.2; analysis, comparison, and cohort schemas are 1.1.
+  Evidence columns, calculation-policy provenance, consequence counts, and
+  per-annotation unmatched counts are retained. CDS matching rules are unchanged;
+  aggregate plots are secondary in gene mode.
+- Add Biopython >=1.85 as a runtime dependency. Protein differences do not
+  establish functional effects or which annotation is correct.
+
+### Fixed
+
+- Apply unambiguous parent-gene attributes consistently before translation, QC,
+  and counting in all analysis/comparison modes, with explicit CDS values taking
+  precedence; disclose mixed legacy/current calculation policies in cohorts.
+- Report undefined GC and zero-CDS percentages/medians as unavailable across
+  JSON, tables, reports, terminal output, and plots; retain true measured zeros.
+- Calculate COG-ID overlap independently of category availability and exclude
+  blank gene attributes from named-CDS counts.
+- Distinguish stop-codon reassignment at unchanged CDS boundaries from an actual
+  terminal boundary change.
+
 ## [1.1.0] - 2026-10-15
 
 ### Added
