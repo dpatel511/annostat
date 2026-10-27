@@ -716,6 +716,26 @@ annostat analyze \
 
 ### Example terminal output
 
+Progress and input paths are written to **stderr**; final summaries are written
+to **stdout**. To save them separately, use `annostat analyze ... >summary.txt
+2>run.log`. `--quiet` suppresses routine output; errors and validation diagnostics
+that reach the selected failure threshold remain visible. This also applies to
+`annostat fetch --quiet`.
+
+Comparison output explicitly labels its mode: the default is **aggregate
+profiles**, without individual CDS matching. With `--gene-level`, the terminal
+also shows accepted CDS pairs, protein-consequence counts and percentages over
+accepted pairs, and per-source counts without an accepted counterpart. A
+relationship row is not necessarily a distinct gene. Protein-length changes are
+B minus A, following the input order.
+
+Invalid command syntax prints usage and exits with status 2. Expected input,
+download, and output-write failures print a concise error to stderr and exit with
+status 2. Standalone `validate` returns 1 when `--fail-on` is reached, or 0
+otherwise, and previews up to five error/warning diagnostics. Its PASS/FAIL label
+describes structural validity; the displayed failure threshold and exit status
+describe the selected CI policy. Full findings remain in the validation files.
+
 ```bash
 annostat analyze \
   -f data/GCF_000007145.1.fna \
@@ -728,8 +748,8 @@ Example output:
 
 ```text
 Annostat 1.1.0 | bacterial genome annotation analysis
-FASTA: /path/to/annostat/data/GCF_000007145.1.fna
-GFF3:  /path/to/annostat/data/GCF_000007145.1.gff3
+  FASTA  /path/to/annostat/data/GCF_000007145.1.fna
+  GFF3   /path/to/annostat/data/GCF_000007145.1.gff3
 
 [1/5] Reading GFF3 annotations and FASTA sequences
 [2/5] Streaming, translating, and writing CDS sequences
@@ -739,21 +759,22 @@ GFF3:  /path/to/annostat/data/GCF_000007145.1.gff3
 
 Analysis summary
 --------------------------------------------------------
-  Genome size                              5,076,188 bp
-  Sequences                              1 (1 circular)
-  Features                                        4,498
-  CDS                                             4,295
-  RNA features                                      181
-  Genome GC                                      65.07%
-  Coding density                                 85.33%
-  Hypothetical CDS                         619 (14.41%)
-  COG-annotated CDS                      2,881 (67.08%)
-  Recognized starts                      4,294 (99.98%)
-  QC review                1 warning, 872 informational findings
+  Genome size               5,076,188 bp
+  Sequences                 1 (1 circular)
+  Features                  4,498
+  CDS                       4,295
+  RNA features              181
+  Genome GC                 65.07%
+  Coding density            85.33%
+  Hypothetical CDS          619 (14.41%)
+  COG-annotated CDS         2,881 (67.08%)
+  Recognized starts         4,294 (99.98%)
+  QC review                 1 warning, 872 informational findings
 --------------------------------------------------------
-  Output                   /path/to/annostat/results
-  Files written            14
-  Completed in             0.56 seconds
+  Output                    /path/to/annostat/results
+  Report                    /path/to/annostat/results/report.html
+  Files written             14
+  Completed in              0.56 seconds
 ```
 
 Runtime depends on the input size and system. The supplied bacterial genome

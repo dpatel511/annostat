@@ -23,6 +23,22 @@ from annostat.validation import validate_annotation, write_validation
 from annostat.workflow import run_analysis
 
 
+def _runtime_error(parser: argparse.ArgumentParser, error: Exception) -> None:
+    """Report an expected input or filesystem failure without usage or traceback."""
+
+    message = str(error)
+    if isinstance(error, OSError) and error.filename:
+        message = f"cannot access {error.filename!r}: {error.strerror}"
+    parser.exit(2, f"{parser.prog}: error: {message}\n")
+
+
+def _print_rows(rows) -> None:
+    """Keep terminal summaries consistently aligned without padding values."""
+
+    for label, value in rows:
+        print(f"  {label:<25} {value}")
+
+
 def build_root_parser() -> argparse.ArgumentParser:
     """Build the command overview shown by ``annostat --help``."""
 
@@ -37,11 +53,12 @@ def build_root_parser() -> argparse.ArgumentParser:
             "  analyze     analyze one FASTA/GFF3 annotation pair\n"
             "  validate    check deterministic structural integrity\n"
             "  summarize   aggregate completed Annostat summaries\n"
-            "  compare     compare two or more annotated genomes\n"
+            "  compare     compare annotation profiles; optionally match CDS pairs\n"
             "  fetch       download annotated NCBI assemblies\n\n"
             "example:\n"
             "  annostat analyze -f genome.fna -g annotations.gff3 -o results\n\n"
-            "Run 'annostat COMMAND --help' for command-specific options. "
+            "Run 'annostat COMMAND --help' for command-specific options.\n"
+            "Progress and diagnostics go to stderr; summaries go to stdout.\n"
             "'inspect' is a supported alias; the option-only form is deprecated."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -197,6 +214,8 @@ def build_compare_parser() -> argparse.ArgumentParser:
             "  annostat compare --genome genome-a a.fna a.gff3 --genome genome-b b.fna b.gff3\n"
             "  annostat compare --gene-level --genome A genome.fna a.gff3 --genome B genome.fna b.gff3\n"
             "  annostat compare --genome sample sample.fna sample.gff3 --reference GCF_000007145.1\n\n"
+            "Default: aggregate profiles only; individual CDS models are not matched.\n"
+            "Use --gene-level for exactly two annotations on identical genome sequences and IDs.\n\n"
             "Local assemblies and external NCBI references may be combined. NCBI inputs require the official "
             "NCBI Datasets CLI."
         ),
@@ -255,6 +274,7 @@ def build_fetch_parser() -> argparse.ArgumentParser:
         "-o", "--output", type=Path, default=Path("annostat_ncbi"), metavar="DIR",
         help="extraction directory (default: annostat_ncbi)",
     )
+    parser.add_argument("-q", "--quiet", action="store_true", help="suppress download summary output")
     return parser
 
 
@@ -320,12 +340,12 @@ def _print_summary(summary: dict[str, object], output_dir: Path, elapsed: float)
     )
     print("\nAnalysis summary")
     print("-" * 56)
-    for label, value in metrics:
-        print(f"  {label:<24} {value:>28}")
+    _print_rows(metrics)
     print("-" * 56)
-    print(f"  Output                   {output_dir.resolve()}")
-    print(f"  Files written            {len(summary['output_files'])}")
-    print(f"  Completed in             {elapsed:.2f} seconds")
+    _print_rows((("Output", output_dir.resolve()),
+                 ("Report", (output_dir / 'report.html').resolve()),
+                 ("Files written", len(summary['output_files'])),
+                 ("Completed in", f"{elapsed:.2f} seconds")))
     performance = summary["performance"]
     if performance.get("peak_memory_bytes"):
         print(f"  Peak Python memory       {performance['peak_memory_bytes'] / 1024 / 1024:.2f} MiB")
@@ -399,9 +419,9 @@ def _main_analysis(command_arguments: list[str], prog: str = "annostat") -> int:
     )
     started = perf_counter()
     if not args.quiet:
-        print(f"Annostat {__version__} | bacterial genome annotation analysis")
-        print(f"FASTA: {args.fasta.resolve()}")
-        print(f"GFF3:  {args.gff.resolve()}\n")
+        print(f"Annostat {__version__} | bacterial genome annotation analysis", file=sys.stderr)
+        print(f"  FASTA  {args.fasta.resolve()}", file=sys.stderr)
+        print(f"  GFF3   {args.gff.resolve()}\n", file=sys.stderr)
     step = 0
 
     def report_progress(message: str) -> None:
@@ -409,7 +429,7 @@ def _main_analysis(command_arguments: list[str], prog: str = "annostat") -> int:
 
         nonlocal step
         step += 1
-        print(f"[{step}/5] {message}")
+        print(f"[{step}/5] {message}", file=sys.stderr, flush=True)
 
     try:
         summary = run_analysis(
@@ -423,7 +443,7 @@ def _main_analysis(command_arguments: list[str], prog: str = "annostat") -> int:
             genetic_code=args.genetic_code,
         )
     except (OSError, ValueError) as error:
-        parser.error(str(error))
+        _runtime_error(parser, error)
     if not args.quiet:
         _print_summary(summary, args.output, perf_counter() - started)
     return 0
@@ -434,28 +454,39 @@ def _main_validate(arguments: list[str]) -> int:
 
     parser = build_validate_parser()
     args = parser.parse_args(arguments)
-    result = validate_annotation(args.fasta, args.gff)
-    counts = result["severity_counts"]
-    finding_count = sum(counts.values())
-    files = write_validation(args.output, result) if finding_count else []
+    try:
+        result = validate_annotation(args.fasta, args.gff)
+        counts = result["severity_counts"]
+        finding_count = sum(counts.values())
+        files = write_validation(args.output, result) if finding_count else []
+    except (OSError, ValueError) as error:
+        _runtime_error(parser, error)
+    failed = bool(args.fail_on != "never" and (
+        counts["error"] or (args.fail_on == "warning" and counts["warning"])
+    ))
     if not args.quiet:
         status = "PASS" if result["valid"] else "FAIL"
         print(f"Annostat {__version__} | annotation validation {status}")
+        _print_rows((("Failure threshold", args.fail_on),
+                     ("Exit status", f"{int(failed)} ({'threshold reached' if failed else 'threshold not reached'})")))
         if finding_count:
-            print(f"  Errors                   {counts['error']:,}")
-            print(f"  Warnings                 {counts['warning']:,}")
-            print(f"  Findings                 {finding_count:,}")
-            print(f"  Output                   {args.output.resolve()}")
-            print(f"  Files written            {len(files)}")
+            _print_rows((("Errors", f"{counts['error']:,}"),
+                         ("Warnings", f"{counts['warning']:,}"),
+                         ("Findings", f"{finding_count:,}"),
+                         ("Output", args.output.resolve()),
+                         ("Files written", len(files))))
         else:
             print("  No validation issues found; no output files were written.")
-    if args.fail_on == "never":
-        return 0
-    if counts["error"]:
-        return 1
-    if args.fail_on == "warning" and counts["warning"]:
-        return 1
-    return 0
+    diagnostics = [finding for finding in result["findings"] if finding["severity"] == "error"
+                   or (finding["severity"] == "warning" and (not args.quiet or failed))]
+    diagnostics.sort(key=lambda finding: finding['severity'] != 'error')
+    for finding in diagnostics[:5]:
+        print(f"{parser.prog}: {finding['severity']}: {finding['rule_id']}: {finding['message']}", file=sys.stderr)
+    if len(diagnostics) > 5:
+        print(f"{parser.prog}: note: {len(diagnostics) - 5} more diagnostic(s); see validation.tsv", file=sys.stderr)
+    if failed:
+        print(f"{parser.prog}: error: --fail-on {args.fail_on} threshold reached; see {(args.output / 'validation.tsv').resolve()}", file=sys.stderr)
+    return int(failed)
 
 
 def _main_summarize(arguments: list[str]) -> int:
@@ -467,13 +498,13 @@ def _main_summarize(arguments: list[str]) -> int:
         cohort = build_cohort(args.inputs)
         files = write_cohort(args.output, cohort)
     except (OSError, ValueError) as error:
-        parser.error(str(error))
+        _runtime_error(parser, error)
     if not args.quiet:
         print(f"Annostat {__version__} | cohort annotation QC")
-        print(f"  Samples                  {cohort['sample_count']:,}")
-        print(f"  Output                   {args.output.resolve()}")
-        print(f"  Files written            {len(files)}")
-        print(f"  Report                   {(args.output / 'cohort.html').resolve()}")
+        _print_rows((("Samples", f"{cohort['sample_count']:,}"),
+                     ("Output", args.output.resolve()),
+                     ("Files written", len(files)),
+                     ("Report", (args.output / 'cohort.html').resolve())))
     return 0
 
 
@@ -502,7 +533,7 @@ def _main_compare(arguments: list[str]) -> int:
         if requested_count < 2:
             parser.error("provide at least two inputs using --genome and/or --reference")
         if args.gene_level and requested_count != 2:
-            parser.error("--gene-level requires exactly two annotations")
+            parser.error("--gene-level requires exactly two annotations; run each pair separately or omit --gene-level for aggregate profiles")
         requested_labels = [dataset.label for dataset in datasets] + (args.references or [])
         if len(requested_labels) != len(set(requested_labels)):
             parser.error("comparison genome labels and references must be unique")
@@ -525,10 +556,16 @@ def _main_compare(arguments: list[str]) -> int:
                 for item in fetched
             )
         if not args.quiet:
-            print(f"Annostat {__version__} | comparative annotation analysis")
+            print(f"Annostat {__version__} | comparative annotation analysis", file=sys.stderr)
+            mode = "gene-level (CDS correspondence and protein evidence)" if args.gene_level else "aggregate profiles (no CDS-by-CDS matching)"
+            print(f"  Mode   {mode}", file=sys.stderr)
+            if not args.gene_level:
+                print("  Tip    add --gene-level with exactly two inputs to inspect individual CDS pairs", file=sys.stderr)
             for dataset in datasets:
-                print(f"  {dataset.label}: {dataset.fasta} + {dataset.gff}")
-            print()
+                print(f"  {dataset.label}", file=sys.stderr)
+                print(f"    FASTA  {dataset.fasta}", file=sys.stderr)
+                print(f"    GFF3   {dataset.gff}", file=sys.stderr)
+            print(file=sys.stderr)
         step = 0
 
         def report_progress(message: str) -> None:
@@ -536,29 +573,47 @@ def _main_compare(arguments: list[str]) -> int:
 
             nonlocal step
             step += 1
-            print(f"[{step}/4] {message}")
+            print(f"[{step}/4] {message}", file=sys.stderr, flush=True)
 
         summary = run_comparison(
             datasets, args.output, None if args.quiet else report_progress,
             gene_level=args.gene_level,
         )
     except (OSError, ValueError) as error:
-        parser.error(str(error))
+        _runtime_error(parser, error)
     if not args.quiet:
         print("\nComparison summary")
         print("-" * 60)
-        print(f"  Datasets                 {len(summary['datasets']):>34,}")
-        print(f"  Taxonomic scope          {summary['taxonomic_scope'].replace('_', ' '):>34}")
-        print(f"  Pairwise comparisons     {len(summary['pairwise_comparisons']):>34,}")
-        print(f"  Interpretation notes     {len(summary['warnings']):>34,}")
+        _print_rows((("Mode", "gene-level" if args.gene_level else "aggregate profiles"),
+                     ("Datasets", f"{len(summary['datasets']):,}"),
+                     ("Taxonomic scope", summary['taxonomic_scope'].replace('_', ' ')),
+                     ("Profile comparisons", f"{len(summary['pairwise_comparisons']):,}"),
+                     ("Interpretation notes", len(summary['warnings']))))
         if args.gene_level:
             gene_result = summary["gene_level_comparison"]
-            print(f"  Gene relationships       {len(gene_result['relationships']):>34,}")
-            print(f"  Exact CDS models         {gene_result['exact_model_count']:>34,}")
-            counts = ", ".join(f"{name}: {count}" for name, count in gene_result["status_counts"].items())
-            print(f"  CDS correspondence       {counts or 'no CDS models'}")
+            matched = gene_result['status_counts'].get('matched', 0)
+            _print_rows((("Relationship rows", f"{len(gene_result['relationships']):,}"),
+                         ("Accepted CDS pairs", f"{matched:,}"),
+                         ("Exact shared models", f"{gene_result['exact_model_count']:,}")))
+            for category, title in (("identical", "Identical proteins"), ("terminal_only", "Terminal differences"),
+                                    ("initiator_recoding", "Initiation context"), ("translation_difference", "Other translation changes"),
+                                    ("limited", "Limited evidence")):
+                count = gene_result['consequence_counts'].get(category, 0)
+                percentage = f"{_percentage(count, matched)} of accepted pairs" if matched else "not available; no accepted pairs"
+                _print_rows(((title, f"{count:,} ({percentage})"),))
+            for label, count in gene_result['cds_counts'].items():
+                print(f"  {label}: {count:,} CDS; {count - matched:,} without an accepted pair; "
+                      f"{gene_result['unmatched_cds_counts'][label]:,} unmatched")
+            print("  Coordinates: 1-based inclusive; protein-length deltas: B minus A.")
+            print("  Agreement is not annotation accuracy; unmatched calls do not establish gene absence.")
+        else:
+            print("  Individual CDS models were not matched. Use --gene-level with exactly two inputs.")
         print("-" * 60)
-        print(f"  Report                   {(args.output / 'comparison.html').resolve()}")
+        _print_rows((("Report", (args.output / 'comparison.html').resolve()),))
+        if args.gene_level:
+            _print_rows((("Text summary", (args.output / 'comparison.txt').resolve()),))
+        for note in summary['warnings']:
+            print(f"{parser.prog}: note: {note}", file=sys.stderr)
     return 0
 
 
@@ -570,11 +625,12 @@ def _main_fetch(arguments: list[str]) -> int:
     try:
         fetched = fetch_genomes(args.accessions, args.output)
     except (OSError, ValueError) as error:
-        parser.error(str(error))
-    print(f"Downloaded {len(fetched)} annotated NCBI genome(s) to {args.output.resolve()}")
-    for item in fetched:
-        organism = item.metadata.get("organism_name") or "organism not provided"
-        print(f"  {item.accession} ({organism}): {item.fasta} + {item.gff}")
+        _runtime_error(parser, error)
+    if not args.quiet:
+        print(f"Downloaded {len(fetched)} annotated NCBI genome(s) to {args.output.resolve()}")
+        for item in fetched:
+            organism = item.metadata.get("organism_name") or "organism not provided"
+            print(f"  {item.accession} ({organism}): {item.fasta} + {item.gff}")
     return 0
 
 
