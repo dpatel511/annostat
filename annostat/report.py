@@ -78,7 +78,7 @@ def render_html_report(
             _metric(
                 "Recognized starts",
                 _percentage(recognized_starts, cds_count),
-                f'{recognized_starts:,} valid initiators for table {summary["genetic_code"]}',
+                f'{recognized_starts:,} first codons matching table {summary["genetic_code"]}; partial CDSs may start internally',
             ),
             _metric("Genome GC", f'{quality["genome_gc_percent"]:.2f}%' if quality["genome_gc_percent"] is not None else "Not available", "canonical-base composition"),
             _metric("Coding density", f'{quality["coding_density_percent"]:.2f}%', "non-duplicated CDS coverage"),

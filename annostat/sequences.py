@@ -7,10 +7,12 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, MutableMapping
 from dataclasses import replace
 
+from Bio.Data.IUPACData import protein_letters_3to1
+
 from annostat.models import CdsSequence, Feature
 
 
-CALCULATION_POLICY = "annotation-metrics-1.1"
+CALCULATION_POLICY = "annotation-metrics-1.2"
 CDS_ANNOTATION_ATTRIBUTES = (
     "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
     "start_range", "end_range", "transl_except", "exception",
@@ -35,11 +37,11 @@ def inherit_cds_attributes(features: tuple[Feature, ...]) -> tuple[Feature, ...]
 
 
 def complete_cds_start(feature: Feature) -> bool:
-    """Whether source attributes permit initiator recoding at the first codon."""
+    """Whether initial phase and source attributes permit initiator recoding."""
     attributes = feature.attributes
     boundary = "end_range" if feature.strand == "-" else "start_range"
     generic_partial = attributes.get("partial", "").strip().lower() in {"1", "true", "yes"} and not ({"start_range", "end_range"} & attributes.keys())
-    return boundary not in attributes and not generic_partial
+    return not feature.phase and boundary not in attributes and not generic_partial
 
 
 _COMPLEMENT = str.maketrans("ACGTRYMKBDHVNacgtrymkbdhvn", "TGCAYRKMVHDBNtgcayrkmvhdbn")
@@ -77,6 +79,7 @@ _TRANSL_EXCEPT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _EXCEPTION_AMINO_ACIDS = {
+    **{name.lower(): amino_acid for name, amino_acid in protein_letters_3to1.items()},
     "sec": "U",
     "pyl": "O",
     "term": "*",
@@ -291,7 +294,9 @@ def _apply_translation_exceptions(
                 amino_acids.append(replacement)
                 applied.append(codon_index)
                 break
-    return "".join(amino_acids), tuple(sorted(set(applied)))
+    if amino_acids and amino_acids[-1] == "*" and len(amino_acids) == len(coding_coordinates) // 3:
+        amino_acids.pop()
+    return "".join(amino_acids), tuple(sorted(index for index in set(applied) if index < len(amino_acids)))
 
 
 def extract_cds_sequences(

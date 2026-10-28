@@ -278,7 +278,7 @@ def _jaccard(left: Iterable[str], right: Iterable[str]) -> float | None:
 def _jensen_shannon(left: dict[str, float], right: dict[str, float]) -> float | None:
     """Return base-2 Jensen-Shannon distance for two percentage profiles."""
 
-    labels = set(left) | set(right)
+    labels = sorted(set(left) | set(right))
     if not labels or not sum(left.values()) or not sum(right.values()):
         return None
     left_total, right_total = sum(left.values()), sum(right.values())
@@ -289,13 +289,14 @@ def _jensen_shannon(left: dict[str, float], right: dict[str, float]) -> float | 
     def divergence(values: dict[str, float]) -> float:
         """Measure one profile's Kullback-Leibler divergence from the midpoint."""
 
-        return sum(
+        return math.fsum(
             value * math.log2(value / midpoint[label])
             for label, value in values.items()
             if value
         )
 
-    return math.sqrt((divergence(p) + divergence(q)) / 2)
+    # Roundoff can make the theoretically nonnegative divergence slightly negative.
+    return math.sqrt(max(0.0, (divergence(p) + divergence(q)) / 2))
 
 
 _NUMERIC_METRICS = (

@@ -23,6 +23,8 @@ GENE_COMPARISON_COLUMNS = (
     )),
     "overlap_bp", "start_delta_bp", "stop_delta_bp", "protein_identical", "changed_attributes",
     "start_codon_a", "start_codon_b", *CONSEQUENCE_COLUMNS,
+    *(f"{name}_{suffix}" for suffix in ("a", "b") for name in
+      ("first_codon_positions", "first_amino_acid", "start_context")),
 )
 
 
@@ -58,11 +60,18 @@ class CdsModel:
     protein: str | None = None
     start_codon: str | None = None
     initiator_amino_acid: str | None = None
+    start_context: str | None = None
+
+    def coding_positions(self) -> Iterable[int]:
+        """Yield oriented, phase-adjusted genomic positions (1-based inclusive)."""
+
+        positions = (position for start, end, _ in self.blocks for position in
+                     (range(start, end + 1) if self.feature.strand == "+" else range(end, start - 1, -1)))
+        return islice(positions, self.feature.phase or 0, None)
 
     def protein_codons(self) -> list[tuple[int, int, int]]:
         """Map each predicted residue to its ordered 1-based genomic triplet."""
-        positions = (position for start, end, _ in self.blocks for position in (range(start, end + 1) if self.feature.strand == "+" else range(end, start - 1, -1)))
-        coding = islice(positions, self.feature.phase or 0, (self.feature.phase or 0) + 3 * self.protein_length)
+        coding = islice(self.coding_positions(), 3 * self.protein_length)
         return list(zip(coding, coding, coding))
 
     @property
@@ -109,12 +118,16 @@ def cds_model(record: CdsSequence, sequence_length: int, genetic_code: int, circ
             offset += end - start + 1
     start_codon = record.coding_nucleotide[:3] if len(record.coding_nucleotide) >= 3 else None
     table = CodonTable.unambiguous_dna_by_id[genetic_code]
-    initiator = table.forward_table.get(start_codon) if record.protein.startswith("M") and complete_cds_start(record.feature) and start_codon in table.start_codons else None
+    context = ("unavailable" if start_codon is None else
+               "translation_exception" if 0 in record.translation_exception_indices else
+               "incomplete_start" if not complete_cds_start(record.feature) else
+               "initiator" if start_codon in table.start_codons else "unrecognized_codon")
+    initiator = table.forward_table.get(start_codon) if record.protein.startswith("M") and context == "initiator" else None
     return CdsModel(
         record.feature, tuple(blocks), record.length, len(record.protein),
         hashlib.sha256(record.protein.encode("ascii")).hexdigest(), genetic_code, circular,
         sequence_length, record.protein,
-        start_codon, initiator,
+        start_codon, initiator, context,
     )
 
 
@@ -214,6 +227,9 @@ def _row(left: CdsModel | None, right: CdsModel | None, labels: tuple[str, str],
             f"cds_length_{suffix}": item.length if item else None,
             f"protein_length_{suffix}": item.protein_length if item else None,
             f"genetic_code_{suffix}": item.genetic_code if item else None,
+            f"first_codon_positions_{suffix}": ",".join(map(str, islice(item.coding_positions(), 3))) if item and item.start_codon else None,
+            f"first_amino_acid_{suffix}": (item.protein[:1] or None) if item and item.protein is not None else None,
+            f"start_context_{suffix}": item.start_context if item else None,
             **{f"{name.lower()}_{suffix}": _attribute(item, name) if item else None for name in _ATTRIBUTES},
         })
     overlap = None
@@ -310,7 +326,7 @@ def compare_cds(left: Iterable[CdsModel], right: Iterable[CdsModel], labels: tup
             rows.append(_row(None, b[j], labels, "unmatched"))
     rows.sort(key=lambda row: (row["seqid"], row["strand"], row["id_a"] or "", row["id_b"] or "", row["status"]))
     return {
-        "schema_version": "1.2", "coordinate_system": "1-based inclusive",
+        "schema_version": "1.3", "coordinate_system": "1-based inclusive",
         "scope": "CDS models only; RNA and gene-only pseudogene records are not matched. Unmatched CDS calls do not establish biological absence.",
         "cds_counts": {labels[0]: len(a), labels[1]: len(b)},
         "exact_model_count": exact_count,

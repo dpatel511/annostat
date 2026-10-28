@@ -80,7 +80,7 @@ def _is_five_prime_partial(feature: Feature) -> bool:
     """Return whether the biological CDS start is explicitly incomplete."""
 
     boundary = "end_range" if feature.strand == "-" else "start_range"
-    if boundary in feature.attributes:
+    if feature.phase or boundary in feature.attributes:
         return True
     return _attribute_is_true(feature, "partial") and not (
         {"start_range", "end_range"} & feature.attributes.keys()

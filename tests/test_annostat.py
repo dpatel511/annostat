@@ -563,7 +563,7 @@ class AnnostatTests(unittest.TestCase):
             )
 
             self.assertIn("100.00%", report)
-            self.assertIn("valid initiators for table 11", report)
+            self.assertIn("first codons matching table 11", report)
             self.assertIn("Other recognized", start_plot)
             self.assertIn("Unrecognized", start_plot)
 
