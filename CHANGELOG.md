@@ -6,6 +6,33 @@ and command-line executable retain the lowercase technical name `annostat`.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - Unreleased
+
+### Fixed
+
+- Do not apply initiator-methionine recoding to a CDS with nonzero initial phase;
+  keep the same incomplete-start interpretation in sequence QC and gene reports.
+- Apply standard amino-acid `transl_except` assignments and remove explicit
+  terminal termination consistently while retaining genuine internal stops.
+- Stabilize Jensen-Shannon distance calculations for proportional profiles and
+  deterministic label ordering, avoiding negative-roundoff square-root failures.
+- Expose model-specific first-codon genomic positions, first predicted amino acid,
+  and translation context in HTML, text, JSON and TSV. Initiation-context notes
+  identify shared-codon coordinates and both protein positions; equal first-codon
+  labels at different loci are no longer left unexplained.
+- Display both gene labels in the evidence browser and describe first-codon
+  counts without treating partial-CDS codons as demonstrated initiators.
+- Use contrasting cell-label text on the actual COG heatmap colors, keeping
+  low and high category percentages readable.
+- Reserve a fixed physical margin above plot titles so browser SVG text bounds
+  remain inside the figure even on short plots.
+
+### Changed
+
+- Shorten the README and move detailed CDS comparison methods and field definitions
+  into a dedicated reference. Gene schema is 1.3 (additive context fields);
+  calculation policy is `annotation-metrics-1.2`. Other schemas remain 1.1.
+
 ## [1.1.0] - 2026-10-27
 
 ### Added

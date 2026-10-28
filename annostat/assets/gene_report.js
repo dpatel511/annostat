@@ -9,6 +9,10 @@
         limited: 'Limited protein evidence', unresolved: 'Unresolved correspondence'};
     const relationshipNames = {exact: 'Exact CDS structure', start_shift: 'Alternative start', stop_shift: 'Alternative stop',
         frame_disagreement: 'Frame disagreement', overlap: 'Other overlap', unmatched: 'Unmatched call'};
+    const startContexts = {initiator: 'Initiator rule at annotated complete start',
+        incomplete_start: 'Incomplete 5′ boundary; elongation translation',
+        translation_exception: 'Explicit first-codon translation exception',
+        unrecognized_codon: 'First codon is not a recognized initiator', unavailable: 'No complete first codon'};
     const shown = value => value === null || value === undefined ? 'Not available' : value === '' ? 'Not provided' : String(value);
     const signed = value => value === null || value === undefined ? 'Not available' : `${value >= 0 ? '+' : ''}${value}`;
     const measured = value => typeof value === 'number' && !Number.isInteger(value) ? value.toFixed(2) : shown(value);
@@ -25,7 +29,7 @@
         columns: [
             {title: 'Evidence', data: 'index', orderable: false, searchable: false,
                 render: (index, type) => type === 'display' ? `<button type="button" data-gene-index="${index}">Inspect</button>` : index},
-            column('Gene / CDS A → B', row => `${row.gene_a || row.gene_b || 'unnamed'}\n${row.id_a || '—'} → ${row.id_b || '—'}`),
+            column('Gene / CDS A → B', row => `${row.gene_a || 'unnamed'} → ${row.gene_b || 'unnamed'}\n${row.id_a || '—'} → ${row.id_b || '—'}`),
             column('Correspondence', row => `${row.status === 'matched' ? 'Resolved pair' : row.status}\n${relationshipNames[row.relationship]}`),
             column('Protein evidence', row => names[row.protein_consequence]),
             column('Protein aa A → B', row => `${row.protein_length_a ?? '—'} → ${row.protein_length_b ?? '—'}`),
@@ -107,13 +111,17 @@
         const detail = document.getElementById('gene-detail');
         const header = el('div', undefined, 'gene-detail-header');
         header.append(el('span', 'Selected CDS relationship', 'gene-eyebrow'));
-        header.append(el('h3', row.gene_a || row.gene_b || 'CDS evidence'));
+        header.append(el('h3', `${row.gene_a || 'unnamed'} → ${row.gene_b || 'unnamed'}`));
         header.append(el('p', `${labels[0]}: ${row.id_a || 'No counterpart'} → ${labels[1]}: ${row.id_b || 'No counterpart'}`));
         header.append(el('p', `${row.status === 'matched' ? 'Resolved pair' : row.status} · ${relationshipNames[row.relationship]} · ${names[row.protein_consequence]}`));
         detail.replaceChildren(header);
         const length = side => row[`id_${side}`] === null ? 'no counterpart' : `${shown(row[`protein_length_${side}`])} aa`;
         const lengths = `Predicted protein lengths: A ${length('a')}; B ${length('b')}. `;
         detail.append(el('p', lengths + row.consequence_note, 'gene-interpretation'));
+        if (row.start_codon_a && row.start_codon_a === row.start_codon_b &&
+            row.first_codon_positions_a !== row.first_codon_positions_b) {
+            detail.append(el('p', `Both models begin with ${row.start_codon_a}, but at different genomic positions. These are separate codon occurrences. Compare the aligned residues at shared genomic codons, not the two first-codon labels.`, 'gene-interpretation'));
+        }
         const stats = el('div', undefined, 'gene-detail-stats');
         for (const [title, value] of [['Protein length Δ (B−A, aa)', signed(row.protein_length_delta_aa)],
             ['N-terminal Δ (B−A, aa)', signed(row.n_terminal_delta_aa)], ['C-terminal Δ (B−A, aa)', signed(row.c_terminal_delta_aa)],
@@ -177,7 +185,12 @@
             const body = el('tbody');
             for (const [key, title] of fields) {
                 const tr = el('tr'), label = el('th', title); label.scope = 'row'; tr.append(label);
-                for (const side of ['a', 'b']) tr.append(el('td', row[`id_${side}`] === null ? 'No counterpart' : row[`${key}_${side}`] === null && ['gene','product','dbxref','partial','pseudo','pseudogene','exception','transl_except','start_range','end_range'].includes(key) ? 'Not provided' : shown(row[`${key}_${side}`])));
+                for (const side of ['a', 'b']) {
+                    const value = row[`${key}_${side}`];
+                    tr.append(el('td', row[`id_${side}`] === null ? 'No counterpart' :
+                        key === 'start_context' ? startContexts[value] || shown(value) :
+                        value === null && ['gene','product','dbxref','partial','pseudo','pseudogene','exception','transl_except','start_range','end_range'].includes(key) ? 'Not provided' : shown(value)));
+                }
                 body.append(tr);
             }
             models.append(body); wrapper.append(models); return wrapper;
@@ -186,7 +199,10 @@
         detail.append(sourceTable([['id', 'CDS ID'], ['gene', 'Gene symbol'], ['product', 'Product label'],
             ['segments', 'Segments (1-based inclusive; biological order)'], ['phase', 'Initial GFF3 phase'],
             ['cds_length', 'CDS length (nt; all segments)'], ['protein_length', 'Protein length (aa)'],
-            ['genetic_code', 'Translation table'], ['start_codon', 'First translated codon (not proof of initiation)']]));
+            ['genetic_code', 'Translation table'], ['start_codon', 'First translated codon (DNA)'],
+            ['first_codon_positions', 'First codon genomic bases (1-based; translation order)'],
+            ['first_amino_acid', 'First predicted amino acid'], ['start_context', 'First-codon translation context']]));
+        detail.append(el('p', 'First codons belong to each model’s own coding boundary. A shared codon can be an initiator in one model and internal in the other. Initiator rules describe the predicted translation, not experimental proof of initiation.', 'note'));
         const context = el('details'); context.append(el('summary', 'Source annotations and database references'));
         context.append(sourceTable([['partial', 'Partial attribute'], ['start_range', 'Start range'], ['end_range', 'End range'],
             ['pseudo', 'Pseudo attribute'], ['pseudogene', 'Pseudogene attribute'], ['transl_except', 'Translation exceptions'],

@@ -85,10 +85,11 @@ def _new_figure(
     FigureCanvasSVG(figure)
     # Reserve physical header space even when the figure is short.
     height_points = 72 * height
+    header_y = 1 - 6 / height_points
     figure.suptitle(
         title,
         x=0.01,
-        y=0.995,
+        y=header_y,
         ha="left",
         va="top",
         fontsize=17,
@@ -97,7 +98,7 @@ def _new_figure(
     )
     figure.text(
         0.01,
-        0.995 - 24 / height_points,
+        header_y - 24 / height_points,
         description,
         ha="left",
         va="top",
@@ -532,9 +533,11 @@ def _write_cog_heatmap(
     colorbar = figure.colorbar(image, ax=axis, shrink=0.78, pad=0.02)
     colorbar.set_label("COG assignments (%)")
 
-    maximum = max((value for row in matrix for value in row), default=1) or 1
     for category_index, row in enumerate(matrix):
         for profile_index, value in enumerate(row):
+            rgb = image.cmap(image.norm(value))[:3]
+            linear = [channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4 for channel in rgb]
+            luminance = sum(weight * channel for weight, channel in zip((0.2126, 0.7152, 0.0722), linear))
             axis.text(
                 profile_index,
                 category_index,
@@ -542,7 +545,7 @@ def _write_cog_heatmap(
                 ha="center",
                 va="center",
                 fontsize=7,
-                color="white" if value / maximum > 0.48 else _INK,
+                color=_INK if luminance > 0.179 else "white",
             )
 
     _save_svg(figure, path, title, description)

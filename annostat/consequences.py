@@ -101,6 +101,7 @@ def _coordinate_consequence(a, b, keys_a, keys_b, initiator_a, initiator_b, boun
     aligned_a, aligned_b = [], []
     previous_a = previous_b = 0
     initiation = mismatches = 0
+    initiation_details = []
     for i, j in common + [(len(a), len(b))]:
         extra_a, extra_b = a[previous_a:i], b[previous_b:j]
         if extra_a and extra_b:
@@ -114,6 +115,13 @@ def _coordinate_consequence(a, b, keys_a, keys_b, initiator_a, initiator_b, boun
                 is_initiation = (i == 0 and a[i] == "M" and b[j] == initiator_a) or (j == 0 and b[j] == "M" and a[i] == initiator_b)
                 initiation += bool(is_initiation)
                 mismatches += not is_initiation
+                if is_initiation:
+                    initiation_details.append(
+                        f"Shared codon at genomic bases {','.join(map(str, keys_a[i]))}: "
+                        f"A residue {i+1}={a[i]}; B residue {j+1}={b[j]} "
+                        "(1-based protein positions). M follows the initiator rule in the model starting here; "
+                        "the other residue matches this codon's elongation assignment."
+                    )
         previous_a, previous_b = i + 1, j + 1
     left, right = "".join(aligned_a), "".join(aligned_b)
     gaps = len(left) - len(common)
@@ -130,7 +138,7 @@ def _coordinate_consequence(a, b, keys_a, keys_b, initiator_a, initiator_b, boun
         "initiator_recoding": f"Boundary/initiation-context difference; {initiation} mismatch(es) follow initiator-methionine recoding. The other {same:,} shared residues are identical, not evidence of internal DNA mutations.",
         "translation_difference": "Other differences at corresponding genomic codons or coding paths; inspect translation tables, exceptions, and partial annotations. These identical assemblies do not establish DNA mutations or functional effects.",
     }
-    result.update(protein_consequence=category, consequence_note=notes[category],
+    result.update(protein_consequence=category, consequence_note=" ".join([notes[category], *initiation_details]),
                   identical_aa=same, substitution_count=initiation+mismatches, gap_aa=gaps,
                   alignment_identity_percent=100*same/len(left), alignment_ambiguous=False,
                   shared_codon_count=len(common), initiator_mismatch_count=initiation, internal_mismatch_count=mismatches,

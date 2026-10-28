@@ -173,6 +173,12 @@ def gene_text_report(summary: dict) -> str:
             lines.append(f"- {row['gene_a'] or row['gene_b'] or 'unnamed'} | {row['id_a'] or 'no counterpart'} / {row['id_b'] or 'no counterpart'} | {row['seqid']} ({row['strand']}) | {row['status']} / {row['relationship']} | {CONSEQUENCE_LABELS.get(category, 'Unresolved correspondence')}; {measurement}.")
             lines.append(f"  A: {row['segments_a'] or 'no counterpart'}; B: {row['segments_b'] or 'no counterpart'} (1-based inclusive).")
             lines.append(f"  {row['consequence_note']}")
+            for side in ("a", "b"):
+                if row[f"id_{side}"] is not None:
+                    lines.append(f"  {side.upper()} first codon: {row[f'start_codon_{side}'] or 'unavailable'}; "
+                                 f"genomic bases {row[f'first_codon_positions_{side}'] or 'unavailable'}; "
+                                 f"first predicted aa {row[f'first_amino_acid_{side}'] or 'unavailable'}; "
+                                 f"context {row[f'start_context_{side}'] or 'unavailable'}.")
             for end in ("n", "c"):
                 if row[f"{end}_terminal_delta_aa"]:
                     residues = row[f"{end}_terminal_residues_a"] or row[f"{end}_terminal_residues_b"]

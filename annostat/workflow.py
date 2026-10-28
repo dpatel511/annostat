@@ -289,11 +289,11 @@ def _run_analysis(
     # The chart stays readable while the CSV retains every observed start codon.
     write_bar_chart(
         plots_dir / "start_codons.svg",
-        "Start codon usage",
+        "First translated codons",
         grouped_starts,
         description=(
-            f"Observed first codon across {len(cds_lengths):,} coding sequences; "
-            f"recognized initiators follow NCBI table {selected_genetic_code}"
+            f"First codons of {len(cds_lengths):,} CDS models; NCBI table {selected_genetic_code} start set. "
+            "Partial CDSs may begin internally."
         ),
         axis_label="Coding sequences",
         sort_by_value=False,
@@ -304,7 +304,7 @@ def _run_analysis(
     notify("Building the offline HTML report")
     plot_paths = [
         (plots_dir / "cds_lengths.svg", "CDS length distribution"),
-        (plots_dir / "start_codons.svg", "Start codon usage"),
+        (plots_dir / "start_codons.svg", "First translated codons"),
     ]
     if summary["cog_data_available"]:
         plot_paths.insert(0, (cog_plot, "COG functional categories"))
