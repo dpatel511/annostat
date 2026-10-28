@@ -28,6 +28,7 @@ class PlotLayoutTests(unittest.TestCase):
                     self.assertGreaterEqual(title.y0 - description.y1, 3 * dpi / 72)
                     self.assertGreaterEqual(description.y0 - axes.y1, 3 * dpi / 72)
                     self.assertLessEqual(title.y1, figure.bbox.y1)
+                    self.assertGreaterEqual(figure.bbox.y1 - title.y1, 3 * dpi / 72)
                     self.assertGreaterEqual(description.y0, figure.bbox.y0)
                     figure.clear()
 
