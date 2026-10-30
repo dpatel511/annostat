@@ -125,7 +125,7 @@ The complete table includes:
 | `n_terminal_residues_a/b`, `c_terminal_residues_a/b` | Extra terminal residues in the indicated predicted protein; their cause is distinguished by the consequence category |
 | `alignment_method`, `alignment_ambiguous`, `alignment_a`, `alignment_b` | Method and aligned sequences for changed, resolvable pairs; unchanged sequences are not duplicated |
 
-Gene-level JSON schema **1.3** records these fields, `consequence_counts`,
+Gene-level JSON schema **1.4** (development checkout) records these fields, `consequence_counts`,
 `unmatched_cds_counts`, and method details. Matching/status rules and existing columns are retained; first-codon context
 fields are documented below. In TSV, null values are blank; in JSON they are `null`.
 The legacy `protein_identical` field records literal translation equality, even
@@ -177,6 +177,29 @@ Initiation-context notes identify the shared genomic codon and the different
 initiator recoding; an explicit first-codon exception takes precedence. The first
 codon labels do not describe every codon in the alignment.
 
-The gene schema is 1.3 in 1.1.1; these context fields also appear in the TSV.
-Calculation policy `annotation-metrics-1.2` records the scientific corrections.
+Version 1.1.1 introduced gene schema 1.3 and calculation policy
+`annotation-metrics-1.2`. The development checkout advances them to 1.4 and
+`annotation-metrics-1.3` for unapplied-exception evidence.
 Analysis/comparison/cohort schemas remain 1.1.
+
+## Unapplied translation exceptions (development checkout)
+
+`unapplied_transl_except_a/b` are appended TSV/JSON fields containing the source
+entries that could not be parsed, assigned a supported amino acid, or mapped to
+one complete CDS codon. An empty string means no unapplied entries; null denotes
+an absent counterpart. Multipart repeats of the same entry are counted once.
+Supported entries are still applied when other entries on that CDS are unsupported.
+A supported native terminal TERM annotation is handled even when the stop has
+already been trimmed from the protein export.
+
+The analysis QC table reports `unapplied_translation_exception` as a warning.
+Accepted pairs involving these CDSs retain genomic correspondence but have
+`protein_consequence=limited`, a reason naming the affected side, and null
+alignment/length-delta statistics. Source lengths and translated FASTA sequences
+remain available as provisional calculations. `protein_identical` still compares
+the literal computed strings; true does not mean all exceptions were applied.
+HTML/text show the limitation; the complete source entries remain in TSV/JSON.
+This is a QC review finding, not a new structural-validation failure threshold.
+
+See [the frozen public-data check](public-data-check.md) for repeatable regression
+checks distinct from experimental biological validation.

@@ -6,6 +6,24 @@ and command-line executable retain the lowercase technical name `annostat`.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Retain unapplied source `transl_except` entries and emit a per-CDS QC warning
+  rather than silently treating the translation as complete. Accepted gene pairs
+  with unapplied entries have limited protein evidence and unavailable alignment
+  statistics; matching and literal `protein_identical` remain unchanged.
+- Do not map out-of-range exception coordinates onto unrelated codons by modulo.
+
+### Changed
+
+- Append `unapplied_transl_except_a/b` to gene exports (gene schema 1.4), expose
+  the entries in HTML/text and advance calculation policy to `annotation-metrics-1.3`.
+- Exercise gene-level reports, exception QC, quiet mode and aggregate cleanup
+  from the installed wheel in CI. Preserve a compact, checksum-locked public
+  Bakta/RefSeq regression manifest and offline verification script.
+
 ## [1.1.1] - 2026-10-28
 
 ### Fixed
