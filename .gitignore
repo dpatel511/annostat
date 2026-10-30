@@ -4,3 +4,13 @@ __pycache__/
 .venv/
 results/
 tmp/
+
+# Local agent instructions and generated artifacts
+/AGENTS.md
+/build/
+/dist/
+/.pytest_cache/
+/.ruff_cache/
+/.coverage
+/.coverage.*
+/htmlcov/
