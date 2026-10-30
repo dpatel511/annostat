@@ -12,7 +12,7 @@ from Bio.Data.IUPACData import protein_letters_3to1
 from annostat.models import CdsSequence, Feature
 
 
-CALCULATION_POLICY = "annotation-metrics-1.2"
+CALCULATION_POLICY = "annotation-metrics-1.3"
 CDS_ANNOTATION_ATTRIBUTES = (
     "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
     "start_range", "end_range", "transl_except", "exception",
@@ -75,7 +75,7 @@ _START_CODONS = {
     25: {"TTG", "ATG", "GTG"},
 }
 _TRANSL_EXCEPT_PATTERN = re.compile(
-    r"pos:(?:complement\()?([0-9]+)\.\.([0-9]+)\)?,aa:([A-Za-z*]+)",
+    r"pos:(?:([0-9]+)\.\.([0-9]+)|complement\(([0-9]+)\.\.([0-9]+)\)),aa:([A-Za-z*]+)",
     re.IGNORECASE,
 )
 _EXCEPTION_AMINO_ACIDS = {
@@ -247,7 +247,7 @@ def _apply_translation_exceptions(
     parts: list[Feature],
     phase: int,
     sequence_length: int,
-) -> tuple[str, tuple[int, ...]]:
+) -> tuple[str, tuple[int, ...], tuple[str, ...]]:
     """Apply position-specific NCBI ``transl_except`` annotations.
 
     The coordinate map is built in biological order, so the same logic handles
@@ -259,7 +259,7 @@ def _apply_translation_exceptions(
         if part.attributes.get("transl_except")
     )
     if not exception_text:
-        return protein, ()
+        return protein, (), ()
     coordinates: list[int] = []
     for part in parts:
         raw_positions = (
@@ -271,11 +271,25 @@ def _apply_translation_exceptions(
     coding_coordinates = coordinates[phase:]
     amino_acids = list(protein)
     applied: list[int] = []
-    for match in _TRANSL_EXCEPT_PATTERN.finditer(exception_text):
-        start, end = int(match.group(1)), int(match.group(2))
-        replacement = _EXCEPTION_AMINO_ACIDS.get(match.group(3).lower())
-        if replacement is None:
+    unapplied: list[str] = []
+    # Split only at a new exception, not at commas inside join/complement locations.
+    entries = dict.fromkeys(re.split(r",\s*(?=\(?pos:)", exception_text, flags=re.IGNORECASE))
+    for entry in entries:
+        entry = entry.strip()
+        normalized = re.sub(r"\s+", "", entry)
+        if normalized.startswith("(") and normalized.endswith(")"):
+            normalized = normalized[1:-1]
+        match = _TRANSL_EXCEPT_PATTERN.fullmatch(normalized)
+        if match is None:
+            unapplied.append(entry)
             continue
+        start, end = int(match.group(1) or match.group(3)), int(match.group(2) or match.group(4))
+        replacement = _EXCEPTION_AMINO_ACIDS.get(match.group(5).lower())
+        if (replacement is None or start < 1 or end - start != 2
+                or end > max(sequence_length, max(part.end for part in parts))):
+            unapplied.append(entry)
+            continue
+        handled = False
         target = {
             (position - 1) % sequence_length + 1
             for position in range(min(start, end), max(start, end) + 1)
@@ -287,16 +301,23 @@ def _apply_translation_exceptions(
             if codon_index < len(amino_acids):
                 amino_acids[codon_index] = replacement
                 applied.append(codon_index)
+                handled = True
                 break
             # ``translate_dna`` removes a terminal stop. Restore it when an
             # explicit terminal exception recodes that codon as an amino acid.
-            if codon_index == len(amino_acids) and replacement != "*":
-                amino_acids.append(replacement)
-                applied.append(codon_index)
+            if codon_index == len(amino_acids):
+                if replacement != "*":
+                    amino_acids.append(replacement)
+                    applied.append(codon_index)
+                handled = True
                 break
+        if not handled:
+            unapplied.append(entry)
     if amino_acids and amino_acids[-1] == "*" and len(amino_acids) == len(coding_coordinates) // 3:
         amino_acids.pop()
-    return "".join(amino_acids), tuple(sorted(index for index in set(applied) if index < len(amino_acids)))
+    return ("".join(amino_acids),
+            tuple(sorted(index for index in set(applied) if index < len(amino_acids))),
+            tuple(unapplied))
 
 
 def extract_cds_sequences(
@@ -371,7 +392,7 @@ def iter_cds_sequences(
             genetic_code=genetic_code,
             complete_start=complete_cds_start(feature),
         )
-        protein, exception_indices = _apply_translation_exceptions(
+        protein, exception_indices, unapplied = _apply_translation_exceptions(
             protein,
             ordered,
             phase,
@@ -384,4 +405,5 @@ def iter_cds_sequences(
             protein=protein,
             segments=tuple(ordered),
             translation_exception_indices=exception_indices,
+            unapplied_translation_exceptions=unapplied,
         )

@@ -53,6 +53,7 @@ class CdsSequence:
     protein: str
     segments: tuple[Feature, ...] = ()
     translation_exception_indices: tuple[int, ...] = ()
+    unapplied_translation_exceptions: tuple[str, ...] = ()
 
     @property
     def length(self) -> int:
