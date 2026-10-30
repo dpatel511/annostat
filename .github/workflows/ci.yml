@@ -112,6 +112,7 @@ jobs:
           "$RUNNER_TEMP/wheel-test/bin/annostat" --version
           "$RUNNER_TEMP/wheel-test/bin/annostat" analyze --help
           "$RUNNER_TEMP/wheel-test/bin/python" -c "import annostat"
+          "$RUNNER_TEMP/wheel-test/bin/python" "$GITHUB_WORKSPACE/examples/check_installed_gene_comparison.py" --output "$RUNNER_TEMP/wheel-gene-check"
 
       - name: Verify distribution contents
         run: |
