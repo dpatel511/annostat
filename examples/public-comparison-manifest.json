@@ -1,0 +1,40 @@
+{
+  "assembly": "GCF_000009045.1",
+  "frozen_audit_date": "2026-10-28",
+  "coordinate_system": "1-based inclusive",
+  "files": {
+    "bakta.fna": {
+      "bytes": 4285951,
+      "sha256": "8e5441988e87d86e2a56296333973248ab1d22335217071e2434ed613f4f1092",
+      "source_member": "GCF_000009045.1.fna",
+      "source_record": "https://zenodo.org/records/5253552"
+    },
+    "bakta.gff3": {
+      "bytes": 5996598,
+      "sha256": "64b42d6c5b82b4b3a5c48d4b516c410b5d298a9f02ce3d46938ec130e067f33f",
+      "source_member": "GCF_000009045.1.gff3",
+      "source_record": "https://zenodo.org/records/5253552"
+    },
+    "refseq.fna": {
+      "bytes": 4268374,
+      "sha256": "59c09816fb55fb1a0b42d0715f627bb42018a19c6bf933c9cb37f6058ee4737e",
+      "source_member": "GCF_000009045.1_ASM904v1_genomic.fna",
+      "source_record": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/009/045/GCF_000009045.1_ASM904v1/"
+    },
+    "refseq.gff3": {
+      "bytes": 3809073,
+      "sha256": "3c877fd4660b532ecbce74c423c000a73751dc5a04104d0e84653c299720f542",
+      "source_member": "GCF_000009045.1_ASM904v1_genomic.gff",
+      "source_record": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/009/045/GCF_000009045.1_ASM904v1/"
+    }
+  },
+  "expected": {
+    "accepted_pairs": 4138,
+    "relationship_rows": 4320,
+    "consequence_counts": {
+      "identical": 3753,
+      "terminal_only": 253,
+      "initiator_recoding": 132
+    }
+  }
+}

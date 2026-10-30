@@ -25,6 +25,7 @@ GENE_COMPARISON_COLUMNS = (
     "start_codon_a", "start_codon_b", *CONSEQUENCE_COLUMNS,
     *(f"{name}_{suffix}" for suffix in ("a", "b") for name in
       ("first_codon_positions", "first_amino_acid", "start_context")),
+    "unapplied_transl_except_a", "unapplied_transl_except_b",
 )
 
 
@@ -61,6 +62,7 @@ class CdsModel:
     start_codon: str | None = None
     initiator_amino_acid: str | None = None
     start_context: str | None = None
+    unapplied_translation_exceptions: tuple[str, ...] = ()
 
     def coding_positions(self) -> Iterable[int]:
         """Yield oriented, phase-adjusted genomic positions (1-based inclusive)."""
@@ -127,7 +129,7 @@ def cds_model(record: CdsSequence, sequence_length: int, genetic_code: int, circ
         record.feature, tuple(blocks), record.length, len(record.protein),
         hashlib.sha256(record.protein.encode("ascii")).hexdigest(), genetic_code, circular,
         sequence_length, record.protein,
-        start_codon, initiator, context,
+        start_codon, initiator, context, record.unapplied_translation_exceptions,
     )
 
 
@@ -230,6 +232,7 @@ def _row(left: CdsModel | None, right: CdsModel | None, labels: tuple[str, str],
             f"first_codon_positions_{suffix}": ",".join(map(str, islice(item.coding_positions(), 3))) if item and item.start_codon else None,
             f"first_amino_acid_{suffix}": (item.protein[:1] or None) if item and item.protein is not None else None,
             f"start_context_{suffix}": item.start_context if item else None,
+            f"unapplied_transl_except_{suffix}": "; ".join(item.unapplied_translation_exceptions) if item else None,
             **{f"{name.lower()}_{suffix}": _attribute(item, name) if item else None for name in _ATTRIBUTES},
         })
     overlap = None
@@ -260,10 +263,17 @@ def _row(left: CdsModel | None, right: CdsModel | None, labels: tuple[str, str],
     })
     row.update(start_codon_a=left.start_codon if left else None, start_codon_b=right.start_codon if right else None)
     if status == "matched":
-        boundary = {"start_shift": "N", "stop_shift": "C"}.get(relationship)
-        row.update(protein_consequence(left.protein, right.protein, boundary,
-                                       codons_a=left.protein_codons(), codons_b=right.protein_codons(),
-                                       initiator_a=left.initiator_amino_acid, initiator_b=right.initiator_amino_acid))
+        if left.unapplied_translation_exceptions or right.unapplied_translation_exceptions:
+            row.update(dict.fromkeys(CONSEQUENCE_COLUMNS))
+            row.update(protein_consequence="limited",
+                       consequence_note="Unapplied source transl_except in " +
+                       ", ".join(side for side, item in (("A", left), ("B", right)) if item.unapplied_translation_exceptions) +
+                       "; translations and their lengths are provisional; no residue-level consequence assigned.")
+        else:
+            boundary = {"start_shift": "N", "stop_shift": "C"}.get(relationship)
+            row.update(protein_consequence(left.protein, right.protein, boundary,
+                                           codons_a=left.protein_codons(), codons_b=right.protein_codons(),
+                                           initiator_a=left.initiator_amino_acid, initiator_b=right.initiator_amino_acid))
     else:
         row.update(dict.fromkeys(CONSEQUENCE_COLUMNS))
         row.update(protein_consequence="unresolved", consequence_note="No accepted one-to-one CDS correspondence; no protein consequence assigned.")
@@ -326,7 +336,7 @@ def compare_cds(left: Iterable[CdsModel], right: Iterable[CdsModel], labels: tup
             rows.append(_row(None, b[j], labels, "unmatched"))
     rows.sort(key=lambda row: (row["seqid"], row["strand"], row["id_a"] or "", row["id_b"] or "", row["status"]))
     return {
-        "schema_version": "1.3", "coordinate_system": "1-based inclusive",
+        "schema_version": "1.4", "coordinate_system": "1-based inclusive",
         "scope": "CDS models only; RNA and gene-only pseudogene records are not matched. Unmatched CDS calls do not establish biological absence.",
         "cds_counts": {labels[0]: len(a), labels[1]: len(b)},
         "exact_model_count": exact_count,

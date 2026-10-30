@@ -340,6 +340,12 @@ def sequence_quality_findings(
     if genetic_code not in _START_CODONS:
         raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 4, 11, or 25")
     findings: list[AnnotationIssue] = []
+    if record.unapplied_translation_exceptions:
+        findings.append(_finding_for_feature(
+            "unapplied_translation_exception", "warning", record.feature,
+            "Source transl_except not applied (unsupported syntax/amino acid or no matching complete codon); "
+            "translation is provisional: " + "; ".join(record.unapplied_translation_exceptions),
+        ))
     coding_sequence = record.coding_nucleotide.upper()
     partial = _is_partial(record.feature)
     five_prime_partial = _is_five_prime_partial(record.feature)

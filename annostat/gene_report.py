@@ -179,6 +179,8 @@ def gene_text_report(summary: dict) -> str:
                                  f"genomic bases {row[f'first_codon_positions_{side}'] or 'unavailable'}; "
                                  f"first predicted aa {row[f'first_amino_acid_{side}'] or 'unavailable'}; "
                                  f"context {row[f'start_context_{side}'] or 'unavailable'}.")
+                    if row[f"unapplied_transl_except_{side}"]:
+                        lines.append(f"  {side.upper()} unapplied transl_except: {row[f'unapplied_transl_except_{side}']}")
             for end in ("n", "c"):
                 if row[f"{end}_terminal_delta_aa"]:
                     residues = row[f"{end}_terminal_residues_a"] or row[f"{end}_terminal_residues_b"]

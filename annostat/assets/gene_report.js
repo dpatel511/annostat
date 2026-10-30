@@ -206,6 +206,7 @@
         const context = el('details'); context.append(el('summary', 'Source annotations and database references'));
         context.append(sourceTable([['partial', 'Partial attribute'], ['start_range', 'Start range'], ['end_range', 'End range'],
             ['pseudo', 'Pseudo attribute'], ['pseudogene', 'Pseudogene attribute'], ['transl_except', 'Translation exceptions'],
+            ['unapplied_transl_except', 'Unapplied translation exceptions (translation provisional)'],
             ['exception', 'Other exceptions'], ['dbxref', 'Database cross-references']])); detail.append(context);
         detail.append(el('p', `Boundary deltas (B−A, bp, positive downstream): 5′ ${shown(row.start_delta_bp)}; 3′ ${shown(row.stop_delta_bp)}. Changed source attributes: ${row.changed_attributes || 'none / not applicable'}. Alignment: ${shown(row.alignment_method)}.`, 'note'));
         detail.append(el('p', 'These measurements do not identify the correct gene model or demonstrate altered function. Source annotations of partial/pseudogene status are context, not validation.', 'note'));

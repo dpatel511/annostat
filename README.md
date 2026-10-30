@@ -140,7 +140,10 @@ to the installed command.
 - Initiator M is a translation rule, not experimental evidence. Nonzero initial
   phase and 5′ partial markers prevent initiator recoding. Supported contiguous
   codon `transl_except` annotations include standard amino acids, Sec, Pyl, TERM
-  and OTHER (X); complex exception positions need external verification.
+  and OTHER (X). In the development checkout, unapplied exception entries produce
+  an `unapplied_translation_exception` QC warning; affected accepted pairs have
+  limited protein evidence. Their exported translations/lengths are provisional.
+  Complex exception positions still need external verification.
 - GC is **G+C divided by A+C+G+T**; ambiguity-only genomes have unavailable GC.
   Assembly length includes ambiguous bases. Coding density uses the union of CDS
   intervals, counting overlaps once.
