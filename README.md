@@ -9,8 +9,8 @@ GFF3** files. Outputs include offline HTML reports, JSON/TSV results, CDS FASTA
 exports and editable SVG plots. Annostat analyzes existing annotations; it does
 not annotate genomes or establish biological correctness.
 
-This README describes **1.1.1**. Check `annostat --version`; package indexes
-may provide an earlier release. Install this checkout for unreleased fixes.
+This README describes **1.1.2**. Check `annostat --version`; package indexes
+may provide an earlier release. See the changelog for version-specific fixes.
 
 ## Installation
 
@@ -140,7 +140,7 @@ to the installed command.
 - Initiator M is a translation rule, not experimental evidence. Nonzero initial
   phase and 5′ partial markers prevent initiator recoding. Supported contiguous
   codon `transl_except` annotations include standard amino acids, Sec, Pyl, TERM
-  and OTHER (X). In the development checkout, unapplied exception entries produce
+  and OTHER (X). Unapplied exception entries produce
   an `unapplied_translation_exception` QC warning; affected accepted pairs have
   limited protein evidence. Their exported translations/lengths are provisional.
   Complex exception positions still need external verification.
@@ -200,6 +200,8 @@ If the command is missing, activate its environment or use `python -m annostat`.
 inspect `validate` output before changing files. For bug reports, include the
 version, command, error and a small non-sensitive example in the
 [issue tracker](https://github.com/dpatel511/annostat/issues).
+
+See the [release and Bioconda automation guide](https://github.com/dpatel511/annostat/blob/main/docs/releasing.md) for publishing and recipe-update expectations.
 
 ## Development and references
 

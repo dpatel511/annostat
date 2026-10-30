@@ -125,7 +125,7 @@ The complete table includes:
 | `n_terminal_residues_a/b`, `c_terminal_residues_a/b` | Extra terminal residues in the indicated predicted protein; their cause is distinguished by the consequence category |
 | `alignment_method`, `alignment_ambiguous`, `alignment_a`, `alignment_b` | Method and aligned sequences for changed, resolvable pairs; unchanged sequences are not duplicated |
 
-Gene-level JSON schema **1.4** (development checkout) records these fields, `consequence_counts`,
+Gene-level JSON schema **1.4** records these fields, `consequence_counts`,
 `unmatched_cds_counts`, and method details. Matching/status rules and existing columns are retained; first-codon context
 fields are documented below. In TSV, null values are blank; in JSON they are `null`.
 The legacy `protein_identical` field records literal translation equality, even
@@ -178,11 +178,11 @@ initiator recoding; an explicit first-codon exception takes precedence. The firs
 codon labels do not describe every codon in the alignment.
 
 Version 1.1.1 introduced gene schema 1.3 and calculation policy
-`annotation-metrics-1.2`. The development checkout advances them to 1.4 and
+`annotation-metrics-1.2`. Version 1.1.2 advances them to 1.4 and
 `annotation-metrics-1.3` for unapplied-exception evidence.
 Analysis/comparison/cohort schemas remain 1.1.
 
-## Unapplied translation exceptions (development checkout)
+## Unapplied translation exceptions (1.1.2)
 
 `unapplied_transl_except_a/b` are appended TSV/JSON fields containing the source
 entries that could not be parsed, assigned a supported amino acid, or mapped to
