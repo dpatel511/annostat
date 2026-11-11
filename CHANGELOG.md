@@ -6,6 +6,31 @@ and command-line executable retain the lowercase technical name `annostat`.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- A checksum-pinned, five-assembly annotation audit with independent source
+  protein, CDS correspondence, exported-table and SVG-geometry checks, plus an
+  optional offline browser suite. Public data remain outside the repository.
+
+### Fixed
+
+- Keep interactive coordinate/count grouping consistent with exported reports
+  across browser locales, and label the consequence-plot axis as accepted pairs.
+
+### Changed
+
+- Focus gene-report tables on differences/review findings by default, retaining
+  all relationships through an explicit view and complete exports. Source A/B
+  columns and accepted-pair terminology are consistent across the gene report.
+- Group ambiguous CDS links into locus views with distinct per-source model
+  counts, candidate-link inspection, shared-coordinate diagrams and optional
+  grey neighbouring CDS context. Repeated exact structures are explained
+  separately from other overlapping alternatives; no split/merge is inferred.
+- Include up to three ambiguous overlap groups in the text interpretation.
+  Matching rules, scientific JSON/TSV, schemas and calculation policy are unchanged.
+
 ## [1.1.2] - 2026-10-30
 
 ### Fixed

@@ -203,3 +203,47 @@ This is a QC review finding, not a new structural-validation failure threshold.
 
 See [the frozen public-data check](public-data-check.md) for repeatable regression
 checks distinct from experimental biological validation.
+
+## Reviewing ambiguous loci (development checkout)
+
+The HTML table starts in **Differences / needs review**. It includes unaccepted
+relationships, structural/protein differences, and changed source attributes
+other than Dbxref alone (including gene/product labels and translation context).
+A changed label does not prove a changed function. **All relationships** restores
+unchanged rows; overview counts and TSV/JSON exports always include all rows.
+Category-count buttons switch to All relationships before applying their category,
+so identical-protein rows are still inspectable. The visible-row counter describes
+current filters, not the denominator of scientific percentages.
+
+The source columns use fixed A/B order. **Accepted pair**, **Candidate pair**,
+**Ambiguous correspondence** and **Unmatched call** describe correspondence;
+protein-evidence categories remain a separate measurement. Accepted-pair wording
+is also used in the text and consequence figure.
+
+For ambiguous correspondence, inspecting one row opens its full **Ambiguous
+overlap group**: unresolved links connected through shared CDS IDs on the same
+sequence and strand. The display counts distinct CDS models per source separately
+from relationship rows, shows every group member on a shared **1-based inclusive**
+coordinate axis, and lets the user inspect each candidate link. Two A calls linked
+to one B call form one review group, not two independent discoveries. Duplicate
+exact structures receive an ID-assignment explanation; ordinary overlaps alone
+do not make accepted exact anchors ambiguous.
+
+This is a presentation of existing unresolved links, not a new matching algorithm
+or evidence that a gene split, fused, is absent, or has a different function. No
+protein consequence is assigned to unaccepted links. The group view does not
+change the row-based counters in JSON/TSV. The text summary lists up to three
+ambiguous groups by source IDs; the HTML retains all groups and links.
+
+The optional **Show neighbouring CDS calls** control adds overlapping context
+and the nearest left/right flanking call from each source. Grey neighbours,
+including opposite-strand neighbours, are context only and are not added to the
+ambiguity group. Source colours identify A/B, not confidence; outlined arrows
+identify the currently inspected link. One lane is used per CDS so coincident
+or overlapping calls remain visible. Multipart blocks retain separate coordinates.
+For circular-origin models, context expansion is disabled; inspect their blocks
+and source segment table rather than inferring a linear flanking region.
+
+These views still require the same unchanged assembly. Matching different strains
+or species would require separate sequence-based correspondence and is outside
+this reporting change.

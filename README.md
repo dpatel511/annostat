@@ -78,6 +78,11 @@ annostat compare --gene-level \
   --genome Bakta genome.fna bakta.gff3 -o gene-comparison
 ```
 
+The development report opens with differences/review findings; All relationships
+retains access to unchanged pairs. Ambiguous links can be inspected together as
+a locus with per-source CDS counts and coordinate tracks. These groups do not
+establish gene split/merge events.
+
 Open `gene-comparison/comparison.html` and inspect a CDS to connect its coordinates,
 translation context and alignment to the classification. `comparison.txt` is the
 text summary; all relationships remain in `tables/gene_comparisons.tsv` and JSON.
@@ -214,3 +219,6 @@ Translation and coordinates follow the [NCBI genetic codes](https://www.ncbi.nlm
 and [NCBI GFF3 documentation](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/).
 See the [1.1.1 validation record](https://github.com/dpatel511/annostat/blob/main/docs/validation-1.1.1.md) for the tested panel and limits, and the [changelog](https://github.com/dpatel511/annostat/blob/main/CHANGELOG.md) for release changes. Computational consistency
 and source checks do not replace independent biological validation.
+
+The optional [multi-tool public-data audit](https://github.com/dpatel511/annostat/blob/main/docs/annotation-panel-testing.md)
+checks five assemblies, source proteins, scientific exports and browser rendering.

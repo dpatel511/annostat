@@ -34,9 +34,58 @@ def _review_groups(gene: dict):
         yield title, guidance, [row for row in gene["relationships"] if row["protein_consequence"] in categories]
 
 
+RELATIONSHIP_LABELS = {
+    "exact": "Exact CDS structure", "start_shift": "Alternative start boundary",
+    "stop_shift": "Alternative stop boundary", "frame_disagreement": "Frame disagreement",
+    "overlap": "Other overlap", "unmatched": "Unmatched call",
+}
+
+
+def review_loci(rows: list[dict]) -> list[dict]:
+    """Group unresolved links sharing a CDS; accepted matches remain unchanged."""
+    nodes, by_model = {}, {}
+    for index, row in enumerate(rows):
+        if row["status"] == "matched":
+            continue
+        keys = [(side, row["seqid"], row["strand"], row[f"id_{side}"])
+                for side in ("a", "b") if row[f"id_{side}"] is not None]
+        nodes[index] = keys
+        for key in keys:
+            by_model.setdefault(key, []).append(index)
+    groups, seen = [], set()
+    for index in nodes:
+        if index in seen:
+            continue
+        pending, indices, models = [index], set(), set()
+        while pending:
+            current = pending.pop()
+            if current in seen:
+                continue
+            seen.add(current)
+            indices.add(current)
+            for key in nodes[current]:
+                if key not in models:
+                    models.add(key)
+                    pending.extend(by_model[key])
+        kinds = {rows[i]["status"] for i in indices}
+        kind = "ambiguous" if "ambiguous" in kinds else "candidate" if "candidate" in kinds else "unmatched"
+        if kind == "ambiguous":
+            reason = ("Repeated exact CDS structures prevent a unique ID assignment."
+                      if all(rows[i]["relationship"] == "exact" for i in indices) else
+                      "Multiple overlapping CDS calls remain; no unique one-to-one correspondence was accepted.")
+        elif kind == "candidate":
+            reason = "An overlap is retained, but it does not meet the accepted exact/boundary correspondence rules."
+        else:
+            reason = "No counterpart was retained for this CDS by the current correspondence rules."
+        groups.append(dict(rows=sorted(indices), kind=kind, reason=reason,
+                           cds_counts={side: sum(key[0] == side for key in models) for side in ("a", "b")}))
+    return groups
+
+
 def render_gene_report(summary: dict, plot: Path) -> str:
     """Present scientific findings before the complete, offline evidence browser."""
     gene = summary["gene_level_comparison"]
+    loci = review_loci(gene["relationships"])
     matched = gene["status_counts"].get("matched", 0)
     counts = gene["consequence_counts"]
     identical = counts.get("identical", 0)
@@ -62,13 +111,13 @@ def render_gene_report(summary: dict, plot: Path) -> str:
         sources += f'''<article class="gene-source"><span class="gene-source-label">{side} · {escape(label)}</span>
 <strong>{total:,} <small>CDS models</small></strong>
 <p>Accepted counterpart: <b>{matched:,} / {total:,} CDS models ({percent(matched, total)})</b></p>
-<p class="note">{total - matched:,} models are not resolved one-to-one, including {gene["unmatched_cds_counts"][label]:,} unmatched calls.</p></article>'''
+<p class="note">{total - matched:,} models have no accepted one-to-one counterpart, including {gene["unmatched_cds_counts"][label]:,} unmatched calls.</p></article>'''
     if not matched:
-        headline = "No one-to-one CDS pairs were resolved"
+        headline = "No one-to-one CDS pairs were accepted"
     elif structures["start_shift"] and not structures["stop_shift"]:
-        headline = "Resolved boundary changes affect CDS starts"
+        headline = "Boundary differences affect CDS starts"
     elif structures["stop_shift"] and not structures["start_shift"]:
-        headline = "Resolved boundary changes affect CDS stops"
+        headline = "Boundary differences affect CDS stops"
     elif structures["start_shift"] or structures["stop_shift"]:
         headline = "Both start and stop boundaries differ between annotations"
     elif changed:
@@ -99,6 +148,7 @@ def render_gene_report(summary: dict, plot: Path) -> str:
     # HTML parsers recognize </script> even inside a JSON string. Escape markup
     # before embedding; the client always renders source attributes as text.
     payload = json.dumps(gene, ensure_ascii=True).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    locus_payload = json.dumps(loci, ensure_ascii=True).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     assets = files("annostat").joinpath("assets")
     css = "\n".join(assets.joinpath(name).read_text(encoding="utf-8") for name in ("datatables-3.1.4.min.css", "gene_report.css"))
     scripts = "\n".join(assets.joinpath(name).read_text(encoding="utf-8") for name in ("datatables-3.1.4.min.js", "gene_report.js"))
@@ -107,7 +157,7 @@ def render_gene_report(summary: dict, plot: Path) -> str:
 <nav class="gene-nav" aria-label="Report sections"><a href="#gene-overview">Overview</a><a href="#gene-differences">Differences</a><a href="#gene-evidence">Gene evidence</a><a href="#gene-methods">Methods</a><a href="#report-data">Download data</a></nav>
 <section class="gene-section" id="gene-overview"><div class="gene-section-heading"><span>01 / Overview</span><p>Two annotations · identical genome sequences</p></div>
 <div class="gene-finding"><span class="gene-eyebrow">Main finding</span><h2>{headline}</h2>
-<p><strong>{matched:,} resolved one-to-one CDS pairs.</strong> Protein comparisons: {identical:,} identical, {changed:,} interpretable differences, {limited:,} limited.</p>
+<p><strong>{matched:,} accepted one-to-one CDS pairs.</strong> Protein comparisons: {identical:,} identical, {changed:,} interpretable differences, {limited:,} limited.</p>
 <p class="note">Experimental support is not assessed. These findings describe annotation differences and do not identify the biologically correct model.</p></div>
 <div class="gene-counts">{cards}</div>
 <div class="gene-sources">{sources}</div></section>
@@ -120,13 +170,15 @@ def render_gene_report(summary: dict, plot: Path) -> str:
 <h3 class="gene-length-heading">Protein length shifts</h3>{length_summary}
 <aside class="gene-unresolved"><h3>{unresolved:,} unresolved relationship rows</h3>
 <p>{gene["status_counts"].get("unmatched", 0):,} unmatched calls · {gene["status_counts"].get("candidate", 0):,} candidate rows · {gene["status_counts"].get("ambiguous", 0):,} ambiguous rows.</p>
+<p><strong>{sum(locus["kind"] == "ambiguous" for locus in loci):,} ambiguous overlap groups.</strong> Each group collects links sharing a CDS; groups are not inferred genes.</p>
 <p class="note">Relationship rows are not distinct genes. Unmatched calls do not establish biological absence; unresolved overlaps do not establish split/merge events.</p>
 <button type="button" data-consequence="unresolved" aria-controls="gene-table" {'disabled' if not unresolved else ''}>Review unresolved rows</button></aside></div></div>
 <details class="gene-figure"><summary>Editable figure: protein consequence counts</summary>{plot.read_text(encoding="utf-8")}<a href="plots/gene_consequences.svg">Download SVG</a></details></section>
 <section class="gene-section" id="gene-evidence"><div class="gene-section-heading"><span>03 / Gene evidence</span><p>Every relationship is available</p></div>
 <h2>Inspect individual CDS models</h2><p class="note">Search a gene, CDS ID, product or source attribute. Select <strong>Inspect</strong> to connect the classification to its coordinates and translated residues. All {len(gene["relationships"]):,} relationship rows are retained.</p>
-<div class="gene-controls"><label>Protein evidence <select id="gene-consequence"><option value="">All relationships</option>{''.join(f'<option value="{key}">{label}</option>' for key, label in CONSEQUENCE_LABELS.items())}<option value="unresolved">Unresolved correspondence</option></select></label>
-<label>Structure <select id="gene-structure"><option value="">All structures</option>{''.join(f'<option value="{key}">{key.replace("_", " ")}</option>' for key in ("exact", "start_shift", "stop_shift", "frame_disagreement", "overlap", "unmatched"))}</select></label></div>
+<div class="gene-controls"><label>View <select id="gene-view"><option value="review">Differences / needs review</option><option value="all">All relationships</option></select></label><label>Protein evidence <select id="gene-consequence"><option value="">All relationships</option>{''.join(f'<option value="{key}">{label}</option>' for key, label in CONSEQUENCE_LABELS.items())}<option value="unresolved">Unresolved correspondence</option></select></label>
+<label>Structure <select id="gene-structure"><option value="">All structures</option>{''.join(f'<option value="{key}">{RELATIONSHIP_LABELS[key]}</option>' for key in ("exact", "start_shift", "stop_shift", "frame_disagreement", "overlap", "unmatched"))}</select></label></div>
+<p class="note" id="gene-view-summary" role="status" aria-live="polite">Differences / needs review is the default. Gene/product label changes are included; source database-reference differences alone do not hide otherwise unchanged pairs from the full export.</p>
 <noscript><p>JavaScript is required for the interactive table. The complete <a href="tables/gene_comparisons.tsv">TSV</a>, <a href="comparison.json">JSON</a>, and <a href="comparison.txt">text summary</a> remain available.</p></noscript>
 <div class="table-wrap"><table id="gene-table" aria-label="Complete CDS relationships"></table></div>
 <section id="gene-detail" class="gene-detail" aria-live="polite"><h3>Gene evidence</h3><p>Select a relationship to inspect its two annotation models.</p></section>
@@ -136,12 +188,13 @@ def render_gene_report(summary: dict, plot: Path) -> str:
 <p>{escape(gene["scope"])} These are descriptive annotation differences, not tests of significance, functional-impact predictions, or evidence that either annotation is correct. Percentages in the difference profile use all accepted pairs; they do not estimate annotation accuracy.</p>
 <p class="downloads"><a href="comparison.txt">Interpretation summary (TXT)</a><a href="tables/gene_comparisons.tsv">All relationships and evidence (TSV)</a><a href="plots/gene_consequences.svg">Consequence counts (SVG)</a></p>
 <details><summary>Bundled table-library license</summary><p>DataTables 3.1.4, locally bundled; no network access.</p><pre class="gene-license">{license_text}</pre></details>
-</section></section><script id="gene-data" type="application/json">{payload}</script><script>{scripts}</script>'''
+</section></section><script id="gene-data" type="application/json">{payload}</script><script id="gene-loci" type="application/json">{locus_payload}</script><script>{scripts}</script>'''
 
 
 def gene_text_report(summary: dict) -> str:
     """Keep the human-readable summary short; the TSV retains every row."""
     gene = summary["gene_level_comparison"]
+    loci = review_loci(gene["relationships"])
     matched = gene["status_counts"].get("matched", 0)
     agreement = gene["exact_agreement"]
     exact = f"{100 * agreement:.2f}%" if agreement is not None else "n/a (no CDS models)"
@@ -149,14 +202,24 @@ def gene_text_report(summary: dict) -> str:
     lines = [f'Annostat {summary["annostat_version"]} | CDS annotation comparison',
              f"A: {labels[0]}", f"B: {labels[1]}",
              "Scope: two annotations of identical DNA; genomic coordinates 1-based inclusive.",
-             f"Resolved one-to-one CDS pairs: {matched:,}"]
-    lines += [f"{label}: {gene['consequence_counts'].get(key, 0):,} / {matched:,} resolved pairs" for key, label in CONSEQUENCE_LABELS.items()]
+             f"Accepted one-to-one CDS pairs: {matched:,}"]
+    lines += [f"{label}: {gene['consequence_counts'].get(key, 0):,} / {matched:,} accepted pairs" for key, label in CONSEQUENCE_LABELS.items()]
     lines += [f"Exact structural agreement: {exact}; {gene['exact_model_count']:,} shared models (multiplicity included).",
               "Unmatched CDS calls: " + "; ".join(f"{label}: {count:,}" for label, count in gene["unmatched_cds_counts"].items()),
               f"Candidate relationship rows: {gene['status_counts'].get('candidate', 0):,}; ambiguous relationship rows: {gene['status_counts'].get('ambiguous', 0):,}.",
               "Relationship rows are not distinct genes. Unresolved pairs have no assigned protein consequence.", "",
               "Review shortlist (up to 3 examples per group; all rows remain in TSV/JSON):",
               "Within each group, measured absolute protein-length differences are largest first; unavailable lengths follow. This is not a functional-impact ranking."]
+    ambiguous = [locus for locus in loci if locus["kind"] == "ambiguous"]
+    lines += ["", f"Ambiguous overlap groups: {len(ambiguous):,} (groups are not inferred genes)."]
+    for locus in ambiguous[:3]:
+        members = {side: sorted({gene["relationships"][i][f"id_{side}"] for i in locus["rows"]
+                                 if gene["relationships"][i][f"id_{side}"] is not None}) for side in ("a", "b")}
+        lines += [f"- A: {', '.join(members['a'])}; B: {', '.join(members['b'])}; "
+                  f"{len(locus['rows'])} relationship rows. {locus['reason']}",
+                  "  No automatic split/merge or pairwise protein consequence is inferred for these links."]
+    if len(ambiguous) > 3:
+        lines.append("Additional groups remain available in the HTML locus views and full relationship exports.")
     for title, guidance, rows in _review_groups(gene):
         lines += ["", f"{title}: {len(rows):,} relationship row{'s' if len(rows) != 1 else ''}", guidance]
         rows.sort(key=lambda row: (row["protein_length_delta_aa"] is None,

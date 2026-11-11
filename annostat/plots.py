@@ -53,12 +53,12 @@ def _short_label(value: object, maximum: int = 36) -> str:
 
 
 def write_gene_consequences(path: Path, result: dict) -> None:
-    """Plot descriptive protein consequences with an explicit resolved-pair denominator."""
+    """Plot descriptive protein consequences with an explicit accepted-pair denominator."""
     from annostat.gene_report import CONSEQUENCE_LABELS
 
     matched = result["status_counts"].get("matched", 0)
     title = "Protein consequences of annotation differences"
-    description = f"{matched:,} resolved one-to-one CDS pairs; genomic codons remain fixed. Not functional-impact predictions."
+    description = f"{matched:,} accepted one-to-one CDS pairs; genomic codons remain fixed. Not functional-impact predictions."
     with mpl.rc_context(_STYLE):
         figure = _new_figure(10.5, 4.5, title, description)
         axis = figure.subplots()
@@ -67,7 +67,7 @@ def write_gene_consequences(path: Path, result: dict) -> None:
         axis.invert_yaxis()
         axis.set_xlim(0, max(1, max(values)) * 1.18)
         axis.xaxis.set_major_locator(MaxNLocator(integer=True))
-        axis.set_xlabel("Resolved CDS pairs (count)")
+        axis.set_xlabel("Accepted CDS pairs (count)")
         axis.bar_label(bars, labels=[f"{value:,} / {matched:,}" for value in values], padding=6, fontsize=9)
         _style_axes(axis)
         _save_svg(figure, path, title, description)
