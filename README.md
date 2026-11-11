@@ -86,6 +86,10 @@ establish gene split/merge events.
 Open `gene-comparison/comparison.html` and inspect a CDS to connect its coordinates,
 translation context and alignment to the classification. `comparison.txt` is the
 text summary; all relationships remain in `tables/gene_comparisons.tsv` and JSON.
+Unresolved loci also show overlapping source pseudogene/RNA records, opposite-strand
+CDSs and sequence-edge context, with original identifiers and explicit overlap
+measurements. All observations are in `tables/gene_context.tsv`; they do not
+establish why the annotations differ or identify the correct model.
 
 **Matching uses CDS structure, strand and frame, not gene names.** Exact unique
 matches anchor the comparison, followed by mutually unique start/stop alternatives.
@@ -171,7 +175,7 @@ to the installed command.
 | `analyze` | `report.html`, `summary.json`, `tables/`, `sequences/`, `plots/` |
 | `validate` | `validation.json` and `validation.tsv` when findings exist |
 | `compare` | `comparison.html`, `comparison.json`, dataset/pairwise TSV tables and SVG plots |
-| `compare --gene-level` | Also `comparison.txt`, `tables/gene_comparisons.tsv`, `plots/gene_consequences.svg` |
+| `compare --gene-level` | Also `comparison.txt`, `tables/gene_comparisons.tsv`, `tables/gene_context.tsv`, `plots/gene_consequences.svg` |
 | `summarize` | `cohort.html`, `cohort.tsv`, `cohort.json` |
 
 Standalone validation writes nothing for clean inputs. Full analysis retains
