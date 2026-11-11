@@ -8,6 +8,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A checksum-pinned, five-assembly annotation audit with independent source
+  protein, CDS correspondence, exported-table and SVG-geometry checks, plus an
+  optional offline browser suite. Public data remain outside the repository.
+
 ### Fixed
 
 - Keep interactive coordinate/count grouping consistent with exported reports

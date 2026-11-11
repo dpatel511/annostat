@@ -1,0 +1,682 @@
+{
+  "cases": [
+    {
+      "accession": "GCF_000009045.1",
+      "name": "Bacillus subtilis",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NC_000964.3": [
+          4215606,
+          "71572ae0b98f44a6382b29e194e56c1f7d87477be8f53915fb06816f886b17b7"
+        ]
+      },
+      "tools": {
+        "Bakta": {
+          "fasta": "inputs/GCF_000009045.1/bakta/annotation.fna",
+          "gff": "inputs/GCF_000009045.1/bakta/annotation.gff3",
+          "gbff": "inputs/GCF_000009045.1/bakta/annotation.gbff",
+          "faa": "inputs/GCF_000009045.1/bakta/annotation.faa",
+          "version": "Bakta 1.1; database 3.0",
+          "sha256": {
+            "fasta": "8e5441988e87d86e2a56296333973248ab1d22335217071e2434ed613f4f1092",
+            "gff": "64b42d6c5b82b4b3a5c48d4b516c410b5d298a9f02ce3d46938ec130e067f33f",
+            "gbff": "f8051eb584f33aa963a2e41530274f83fc735418243f1bb174f9978170a61647",
+            "faa": "12e8befb2cb2128d98607b906316a034d81878a5030886cac3f035f85579eacd"
+          }
+        },
+        "RefSeq": {
+          "fasta": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.fna",
+          "gff": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.gff",
+          "gbff": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.gbff",
+          "faa": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_protein.faa",
+          "version": "NCBI RefSeq; exact annotation headers retained",
+          "sha256": {
+            "fasta": "59c09816fb55fb1a0b42d0715f627bb42018a19c6bf933c9cb37f6058ee4737e",
+            "gff": "3c877fd4660b532ecbce74c423c000a73751dc5a04104d0e84653c299720f542",
+            "gbff": "dec50c042eac02710a380ea72db40a1cb5ce6af17556a1668a674f06cfea16d0",
+            "faa": "c0b6f56f434d113c4c71ba619f9916dd24eef1834b77bd972e77edd7ea05eec8"
+          }
+        },
+        "Prokka": {
+          "fasta": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.fna",
+          "gff": "inputs/GCF_000009045.1/prokka/normalized.gff3",
+          "gbff": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.gbk",
+          "faa": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.faa",
+          "source_gff": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.gff",
+          "source_fasta": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.fna",
+          "version": "Prokka 1.14.6; HOMD 11.02",
+          "seqid_mapping": {
+            "GCA_000009045.1|AL009126.3": "NC_000964.3"
+          },
+          "sha256": {
+            "fasta": "59c09816fb55fb1a0b42d0715f627bb42018a19c6bf933c9cb37f6058ee4737e",
+            "gff": "9a908cc7b7e0c0d1c9f121fb6cdb562e34dacbf07f7bf2b1d24d38daa62b5f5f",
+            "gbff": "71d5fb72b7f89bb5d2f7c3f7e5486d948bf3567eff93f1c2d5cbdf265357115f",
+            "faa": "847bf14f17b52b4a662b0ef67d2c16c2756e911861b2ba4906f073425b729d65"
+          }
+        },
+        "Pyrodigal": {
+          "fasta": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.fna",
+          "gff": "inputs/GCF_000009045.1/pyrodigal/annotation.gff3",
+          "faa": "inputs/GCF_000009045.1/pyrodigal/annotation.faa",
+          "gbff": "inputs/GCF_000009045.1/pyrodigal/annotation.gbff",
+          "version": "3.7.1",
+          "settings": {
+            "meta": false,
+            "closed": false,
+            "translation_table": 11
+          },
+          "scope": "CDS predictions only; no functional annotations",
+          "sha256": {
+            "fasta": "59c09816fb55fb1a0b42d0715f627bb42018a19c6bf933c9cb37f6058ee4737e",
+            "gff": "3e6f124ad2279272206f6599b7b39aff64e2d126168d80cc65fc2b7582d8a521",
+            "gbff": "b78df5c1bf2a0a454d4b7bdf3d532ebc269691352c22698cd32238fc08f161fb",
+            "faa": "9cb65defd4efd2e0c2a6d08914670e50ce39ef5cd3c1e0719c5f3a3f3e26f541"
+          }
+        }
+      },
+      "downloads": [
+        {
+          "path": "downloads/GCF_000009045.1-Bacillus-subtilis-subsp.-subtilis.tar.gz",
+          "url": "https://zenodo.org/record/5253552/files/GCF_000009045.1-Bacillus-subtilis-subsp.-subtilis.tar.gz?download=1",
+          "bytes": 15968818,
+          "sha256": "b8877d6bd4d71271ae884970d8f15f9655ac331e3faa8b4196e5b08e1815899f"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/009/045/GCF_000009045.1_ASM904v1/GCF_000009045.1_ASM904v1_genomic.fna.gz",
+          "bytes": 1248396,
+          "sha256": "1a9e4f66533db783e9ecb6727355993a16a00ef36fa512dcac2de39eff1ae8c5"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/009/045/GCF_000009045.1_ASM904v1/GCF_000009045.1_ASM904v1_genomic.gff.gz",
+          "bytes": 550736,
+          "sha256": "a3e6d29c34ac0d4b7581e17902f9efc1d7737726ec3d5c1896d8ed40eaa0a881"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/009/045/GCF_000009045.1_ASM904v1/GCF_000009045.1_ASM904v1_genomic.gbff.gz",
+          "bytes": 3391532,
+          "sha256": "cf958f2c986289f4edc7c94b7cd6f625a4a4af16a3f0f67620fc9de67e670c0e"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/refseq/GCF_000009045.1_ASM904v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/009/045/GCF_000009045.1_ASM904v1/GCF_000009045.1_ASM904v1_protein.faa.gz",
+          "bytes": 838619,
+          "sha256": "07dd3f7428548913fdf0aa91aa65a25ea8e9673ecd8724305739f74d6c198225"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.fna",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/fna/GCA_000009045.1.fna",
+          "bytes": 4285925,
+          "sha256": "58ffe7972cd28dac03f17460e3ba1fc1fea7a00b82c5bdfb4727427d282752ca"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.gff",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gff/GCA_000009045.1.gff",
+          "bytes": 1183591,
+          "sha256": "c1280d535a299bf5ab8f3672de1d3b0f951cacb9ee52d9e472561f80f9fd6419"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.gbk",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gbk/GCA_000009045.1.gbk",
+          "bytes": 10306741,
+          "sha256": "71d5fb72b7f89bb5d2f7c3f7e5486d948bf3567eff93f1c2d5cbdf265357115f"
+        },
+        {
+          "path": "inputs/GCF_000009045.1/prokka/GCA_000009045.1.faa",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/faa/GCA_000009045.1.faa",
+          "bytes": 1622109,
+          "sha256": "847bf14f17b52b4a662b0ef67d2c16c2756e911861b2ba4906f073425b729d65"
+        }
+      ],
+      "transformations": {
+        "Prokka": {
+          "seqid_mapping": {
+            "GCA_000009045.1|AL009126.3": "NC_000964.3"
+          },
+          "feature_rows": 4432,
+          "restored_version_headers": 1,
+          "coordinates_and_attributes_unchanged": true
+        }
+      }
+    },
+    {
+      "accession": "GCF_000829055.1",
+      "name": "Lactobacillus casei",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NZ_AP012544.1": [
+          2924929,
+          "c0876823539d4ad236ebedfed65516b66fc79e7bbd89be19f3871605d962dac6"
+        ],
+        "NZ_AP012545.1": [
+          26706,
+          "45c43803ae664cc94b93b07c5bc2fa6bedf6431dfdb5b575c42400a5cd916cd3"
+        ],
+        "NZ_AP012546.1": [
+          1326,
+          "2d7bc0dee5955ebea968eda7e1a1edfd3b0fce661b901e285c661721b57e217c"
+        ]
+      },
+      "tools": {
+        "Bakta": {
+          "fasta": "inputs/GCF_000829055.1/bakta/annotation.fna",
+          "gff": "inputs/GCF_000829055.1/bakta/annotation.gff3",
+          "gbff": "inputs/GCF_000829055.1/bakta/annotation.gbff",
+          "faa": "inputs/GCF_000829055.1/bakta/annotation.faa",
+          "version": "Bakta 1.1; database 3.0",
+          "sha256": {
+            "fasta": "f02a9bc151ddbba3af69e56cbec96cb98d304a312cbccd42254a2312b5431f99",
+            "gff": "023f377368482046311318385279478055d73425d542b35a9cac40e7f729fc91",
+            "gbff": "59074585fe218bfc2a57103ed62c835073c442d90d5d1441c516a2d2f8dd6e0a",
+            "faa": "a3e0320096dd2cd5db678b74ca0ec82d5464d84e9cb69d688e1c286e197b0906"
+          }
+        },
+        "RefSeq": {
+          "fasta": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.fna",
+          "gff": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.gff",
+          "gbff": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.gbff",
+          "faa": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_protein.faa",
+          "version": "NCBI RefSeq; exact annotation headers retained",
+          "sha256": {
+            "fasta": "4396c27204182c0cde60eb8369134b78d01c398a5a38c0dbc18cf2365ff0397c",
+            "gff": "8e316cb91a59d13da61ff2defe3717dbc42736a1a32dbb3c917ab8bb4610d1da",
+            "gbff": "6e8336995a3e69ef1487b56c4a67aec48236ad2bdf18ca903751048afa8e7976",
+            "faa": "c73852b52f6309567a2c40b1ec37f4334a2b59054020739a170c63179133998f"
+          }
+        },
+        "Prokka": {
+          "fasta": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.fna",
+          "gff": "inputs/GCF_000829055.1/prokka/normalized.gff3",
+          "gbff": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.gbk",
+          "faa": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.faa",
+          "source_gff": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.gff",
+          "source_fasta": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.fna",
+          "version": "Prokka 1.14.6; HOMD 11.02",
+          "seqid_mapping": {
+            "GCA_000829055.1|AP012544.1": "NZ_AP012544.1",
+            "GCA_000829055.1|AP012545.1": "NZ_AP012545.1",
+            "GCA_000829055.1|AP012546.1": "NZ_AP012546.1"
+          },
+          "sha256": {
+            "fasta": "4396c27204182c0cde60eb8369134b78d01c398a5a38c0dbc18cf2365ff0397c",
+            "gff": "fb87f43993d331322a78ce43f552bd371c69ca072dc06b2403916ae55ccf4f73",
+            "gbff": "f215b54f527cec6c0e7608b979317f503c7c91831e84a0b3b4ad39a086c7f4b4",
+            "faa": "b332885625ac2070cc6e59b33439aa76eba795ba44c1f27df646358c7c612f7b"
+          }
+        },
+        "Pyrodigal": {
+          "fasta": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.fna",
+          "gff": "inputs/GCF_000829055.1/pyrodigal/annotation.gff3",
+          "faa": "inputs/GCF_000829055.1/pyrodigal/annotation.faa",
+          "gbff": "inputs/GCF_000829055.1/pyrodigal/annotation.gbff",
+          "version": "3.7.1",
+          "settings": {
+            "meta": false,
+            "closed": false,
+            "translation_table": 11
+          },
+          "scope": "CDS predictions only; no functional annotations",
+          "sha256": {
+            "fasta": "4396c27204182c0cde60eb8369134b78d01c398a5a38c0dbc18cf2365ff0397c",
+            "gff": "d92d187077dec07301a06569dc7ffea9e130f90a8a311439e215f418af3ac2c0",
+            "gbff": "6031fbd78e7b1da0b0789485e33af9b89183d1bba69f42c55c73197db4da52ef",
+            "faa": "16e2df701998f5c7560deedc4a6436223360de08c95150b670aee461844c6b9a"
+          }
+        }
+      },
+      "downloads": [
+        {
+          "path": "downloads/GCF_000829055.1-Lactobacillus-casei.tar.gz",
+          "url": "https://zenodo.org/record/5253552/files/GCF_000829055.1-Lactobacillus-casei.tar.gz?download=1",
+          "bytes": 10692904,
+          "sha256": "cbfdfeb905e303f824533d67d6ea51a4b4d51dd06a5afb8c3bcccad029e1dca4"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/829/055/GCF_000829055.1_ASM82905v1/GCF_000829055.1_ASM82905v1_genomic.fna.gz",
+          "bytes": 873516,
+          "sha256": "3e986806b5c0222b0a8688addd0bc64ffc377b1dba5b8f51af0dab9ddae44ecd"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/829/055/GCF_000829055.1_ASM82905v1/GCF_000829055.1_ASM82905v1_genomic.gff.gz",
+          "bytes": 262778,
+          "sha256": "0913a6c5165e959928f996cba93c2f847762b943d58b176839e15ecfeb06bdca"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/829/055/GCF_000829055.1_ASM82905v1/GCF_000829055.1_ASM82905v1_genomic.gbff.gz",
+          "bytes": 2140121,
+          "sha256": "86ea7cd9a95944aa5e21dce1bb75c14879e2ed1f74dcda85c089c374b73e5e77"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/refseq/GCF_000829055.1_ASM82905v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/829/055/GCF_000829055.1_ASM82905v1/GCF_000829055.1_ASM82905v1_protein.faa.gz",
+          "bytes": 499005,
+          "sha256": "807e91568d666286659317f065a4c8deaa0d9a0624f9426b261a3f4d1fbe121f"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.fna",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/fna/GCA_000829055.1.fna",
+          "bytes": 3002389,
+          "sha256": "e55f7a539debe8b87609c066b09cc4a826d424408ff0c507cb9fc395c726f6fe"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.gff",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gff/GCA_000829055.1.gff",
+          "bytes": 766207,
+          "sha256": "293b9ddf880b3aec62cb99069a7eb704243580ddc13671d7f65ac8030f8f5381"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.gbk",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gbk/GCA_000829055.1.gbk",
+          "bytes": 7013061,
+          "sha256": "f215b54f527cec6c0e7608b979317f503c7c91831e84a0b3b4ad39a086c7f4b4"
+        },
+        {
+          "path": "inputs/GCF_000829055.1/prokka/GCA_000829055.1.faa",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/faa/GCA_000829055.1.faa",
+          "bytes": 1134363,
+          "sha256": "b332885625ac2070cc6e59b33439aa76eba795ba44c1f27df646358c7c612f7b"
+        }
+      ],
+      "transformations": {
+        "Prokka": {
+          "seqid_mapping": {
+            "GCA_000829055.1|AP012544.1": "NZ_AP012544.1",
+            "GCA_000829055.1|AP012545.1": "NZ_AP012545.1",
+            "GCA_000829055.1|AP012546.1": "NZ_AP012546.1"
+          },
+          "feature_rows": 2994,
+          "restored_version_headers": 1,
+          "coordinates_and_attributes_unchanged": true
+        }
+      }
+    },
+    {
+      "accession": "GCF_000817005.1",
+      "name": "Streptococcus pneumoniae",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NZ_CP007593.1": [
+          2287774,
+          "2a79eac384b560f55b763f2be871b70da678e784039b2f84b816419db0d253b8"
+        ]
+      },
+      "tools": {
+        "Bakta": {
+          "fasta": "inputs/GCF_000817005.1/bakta/annotation.fna",
+          "gff": "inputs/GCF_000817005.1/bakta/annotation.gff3",
+          "gbff": "inputs/GCF_000817005.1/bakta/annotation.gbff",
+          "faa": "inputs/GCF_000817005.1/bakta/annotation.faa",
+          "version": "Bakta 1.1; database 3.0",
+          "sha256": {
+            "fasta": "de08dd6c3a2b40b2474a30fce081f832d5f9f68531813534ee129a22c3137083",
+            "gff": "1f5d2ff9bab10ee2f71c2184c1ae658660d76a4aeb64f4c6c75c2a61579b3a5a",
+            "gbff": "6ff142e74842b7aca85723e5b6ead6dd957b525cd22416240dc6d163ff610816",
+            "faa": "278a662c80b5687410173158b00b5e7f055a34e97d150af49c1ac74ab9e0a7c5"
+          }
+        },
+        "RefSeq": {
+          "fasta": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.fna",
+          "gff": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.gff",
+          "gbff": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.gbff",
+          "faa": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_protein.faa",
+          "version": "NCBI RefSeq; exact annotation headers retained",
+          "sha256": {
+            "fasta": "32f51aef018f4bde6bf2d22b7ba6ef035802b06610eb821b52eef557fbd52c0e",
+            "gff": "49d600f9f2ee906fa333a2841756a0a130d9843c3363db195c349bdb42ae4818",
+            "gbff": "6cd960a833d86e8f5251b8b59a1529b356009ad4c985f8f115ffe1d3b403ad5a",
+            "faa": "ffd46370febec13c15a71edc25aee39c59086504badcecd598b88cd62088ef1f"
+          }
+        },
+        "Prokka": {
+          "fasta": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.fna",
+          "gff": "inputs/GCF_000817005.1/prokka/normalized.gff3",
+          "gbff": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.gbk",
+          "faa": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.faa",
+          "source_gff": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.gff",
+          "source_fasta": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.fna",
+          "version": "Prokka 1.14.6; HOMD 11.02",
+          "seqid_mapping": {
+            "GCA_000817005.1|CP007593.1": "NZ_CP007593.1"
+          },
+          "sha256": {
+            "fasta": "32f51aef018f4bde6bf2d22b7ba6ef035802b06610eb821b52eef557fbd52c0e",
+            "gff": "100508fa40eddce0fc5911747d14c6f287eefc16f34167640ae8ca40c92f7c5a",
+            "gbff": "e3bffaed94071e6545433a521f20b193725ebb3031b75d936813ef86dc77cae9",
+            "faa": "1eded34bbe3f9fa4ee23a9148cea2a07c4a16c35c345ad36db999e968ae610ba"
+          }
+        },
+        "Pyrodigal": {
+          "fasta": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.fna",
+          "gff": "inputs/GCF_000817005.1/pyrodigal/annotation.gff3",
+          "faa": "inputs/GCF_000817005.1/pyrodigal/annotation.faa",
+          "gbff": "inputs/GCF_000817005.1/pyrodigal/annotation.gbff",
+          "version": "3.7.1",
+          "settings": {
+            "meta": false,
+            "closed": false,
+            "translation_table": 11
+          },
+          "scope": "CDS predictions only; no functional annotations",
+          "sha256": {
+            "fasta": "32f51aef018f4bde6bf2d22b7ba6ef035802b06610eb821b52eef557fbd52c0e",
+            "gff": "85e2dc1ef15a50232d6420aa3b1cd0e8b93d6f71704e26b70649b4c008345bf3",
+            "gbff": "f90dc0d04c15b735d35df838698ccb016a16c163480e6a2f94f7ddc3791815be",
+            "faa": "74c10a697033dbe4924a40a0d026ae174035c4a5a962133f7c7e6d40b813c22f"
+          }
+        }
+      },
+      "downloads": [
+        {
+          "path": "downloads/GCF_000817005.1-Streptococcus-pneumoniae.tar.gz",
+          "url": "https://zenodo.org/record/5253552/files/GCF_000817005.1-Streptococcus-pneumoniae.tar.gz?download=1",
+          "bytes": 8490404,
+          "sha256": "739c47e5a2b39970a84acdfe8efb57e92b6c0b6783d6c8d0460da3a3d053b2fe"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/817/005/GCF_000817005.1_ASM81700v1/GCF_000817005.1_ASM81700v1_genomic.fna.gz",
+          "bytes": 669632,
+          "sha256": "6c76da130540de059652ce9f1eb6ce49d1b18569f250950bc55a5ab7ec526706"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/817/005/GCF_000817005.1_ASM81700v1/GCF_000817005.1_ASM81700v1_genomic.gff.gz",
+          "bytes": 188792,
+          "sha256": "49f5d09decf1c165cba7f3ff51f010f51034922364629e0e03aa5c1a30a01b02"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/817/005/GCF_000817005.1_ASM81700v1/GCF_000817005.1_ASM81700v1_genomic.gbff.gz",
+          "bytes": 1623432,
+          "sha256": "bfa7e1987cff02c3a9742c80b426aec99b1f06330c48059dc8a58ccbee844ead"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/refseq/GCF_000817005.1_ASM81700v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/817/005/GCF_000817005.1_ASM81700v1/GCF_000817005.1_ASM81700v1_protein.faa.gz",
+          "bytes": 394338,
+          "sha256": "d59afd4ff583758e31dd58007ac2a0b2ecfb4eeefb6495b2451fc5d5bf304786"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.fna",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/fna/GCA_000817005.1.fna",
+          "bytes": 2325975,
+          "sha256": "cc9d60cfd4c2f24a2ae7500dc643ecd3c55c575bddc5e979a299684d5b6fcb07"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.gff",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gff/GCA_000817005.1.gff",
+          "bytes": 610348,
+          "sha256": "d0b18f5a17fcd993b9b726e5fb0c88c0df43bc5be148a83daf26b6bd101aaaee"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.gbk",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gbk/GCA_000817005.1.gbk",
+          "bytes": 5479375,
+          "sha256": "e3bffaed94071e6545433a521f20b193725ebb3031b75d936813ef86dc77cae9"
+        },
+        {
+          "path": "inputs/GCF_000817005.1/prokka/GCA_000817005.1.faa",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/faa/GCA_000817005.1.faa",
+          "bytes": 889495,
+          "sha256": "1eded34bbe3f9fa4ee23a9148cea2a07c4a16c35c345ad36db999e968ae610ba"
+        }
+      ],
+      "transformations": {
+        "Prokka": {
+          "seqid_mapping": {
+            "GCA_000817005.1|CP007593.1": "NZ_CP007593.1"
+          },
+          "feature_rows": 2401,
+          "restored_version_headers": 1,
+          "coordinates_and_attributes_unchanged": true
+        }
+      }
+    },
+    {
+      "accession": "GCF_000013425.1",
+      "name": "Staphylococcus aureus",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NC_007795.1": [
+          2821361,
+          "04fe982abc09948699461724b28b0283a506804ddd1cbf015814fe72b7d8fd0f"
+        ]
+      },
+      "tools": {
+        "Bakta": {
+          "fasta": "inputs/GCF_000013425.1/bakta/annotation.fna",
+          "gff": "inputs/GCF_000013425.1/bakta/annotation.gff3",
+          "gbff": "inputs/GCF_000013425.1/bakta/annotation.gbff",
+          "faa": "inputs/GCF_000013425.1/bakta/annotation.faa",
+          "version": "Bakta 1.1; database 3.0",
+          "sha256": {
+            "fasta": "9f7f5d8a1402fe41440533c45d59e0e5b1d10cd3e64aa2bbf46abb8783b42d21",
+            "gff": "05bd931b8f1e8a233d40804649a467afa0e47f510d79fc2e0b5d0413eb3bb5e2",
+            "gbff": "cbe1370c74e2d10109f40d947437ae0fe9f5e31afbf1ce184942b93ee6608978",
+            "faa": "46c01c6cc8e3997f411996f0fd629f0aac61956e14ebf3d133211ffaba790453"
+          }
+        },
+        "RefSeq": {
+          "fasta": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.fna",
+          "gff": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.gff",
+          "gbff": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.gbff",
+          "faa": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_protein.faa",
+          "version": "NCBI RefSeq; exact annotation headers retained",
+          "sha256": {
+            "fasta": "05df047f78234de456a72df5f938b7fdef98fc3af3bf8634a11d70fbd3dcd21d",
+            "gff": "d92a98baad1e970366801ff79751c2a24ac8bc1a2f2bede8369cf2651d847284",
+            "gbff": "7833f1e79c1fb7b0b5212d7f8ec2ace7119591391382ae51c8fee215959d134b",
+            "faa": "88fe592e4aa36e195a32b1874730f301024c4aea827fca7e7deb0c8be04339cf"
+          }
+        },
+        "Prokka": {
+          "fasta": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.fna",
+          "gff": "inputs/GCF_000013425.1/prokka/normalized.gff3",
+          "gbff": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.gbk",
+          "faa": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.faa",
+          "source_gff": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.gff",
+          "source_fasta": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.fna",
+          "version": "Prokka 1.14.6; HOMD 11.02",
+          "seqid_mapping": {
+            "GCA_000013425.1|CP000253.1": "NC_007795.1"
+          },
+          "sha256": {
+            "fasta": "05df047f78234de456a72df5f938b7fdef98fc3af3bf8634a11d70fbd3dcd21d",
+            "gff": "a0f15712021f4d50d3167ca317712815dee73bc136b1f211dd99c987d9331525",
+            "gbff": "fb94eed9f5c4fde348852aaec8d5c7a13e64ad77504ec6a2a7ef30a8bb1ba831",
+            "faa": "72a30df7dc6d2901dcfef03557be2d496fdcbb967f86f9db40bf580267578c69"
+          }
+        },
+        "Pyrodigal": {
+          "fasta": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.fna",
+          "gff": "inputs/GCF_000013425.1/pyrodigal/annotation.gff3",
+          "faa": "inputs/GCF_000013425.1/pyrodigal/annotation.faa",
+          "gbff": "inputs/GCF_000013425.1/pyrodigal/annotation.gbff",
+          "version": "3.7.1",
+          "settings": {
+            "meta": false,
+            "closed": false,
+            "translation_table": 11
+          },
+          "scope": "CDS predictions only; no functional annotations",
+          "sha256": {
+            "fasta": "05df047f78234de456a72df5f938b7fdef98fc3af3bf8634a11d70fbd3dcd21d",
+            "gff": "653064ff5e0fa925e7593ba9ec977755b53fd1f4ec1b5f115b800e97b493cc50",
+            "gbff": "f906597fa079fd2622d45ee337085815afaf86eafcc7362267bf35fbe1888ed3",
+            "faa": "0b21df8dc51419b57ee68a08fd4520ba1ef0794f21c353c003b838ec63ccc571"
+          }
+        }
+      },
+      "downloads": [
+        {
+          "path": "downloads/GCF_000013425.1-Staphylococcus-aureus-subsp.-aureus.tar.gz",
+          "url": "https://zenodo.org/record/5253552/files/GCF_000013425.1-Staphylococcus-aureus-subsp.-aureus.tar.gz?download=1",
+          "bytes": 10344485,
+          "sha256": "52170bff21eb1b384439e1c3ddf4b506c7f3d4fb11e6c941a94f2f62e55e5d6b"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/013/425/GCF_000013425.1_ASM1342v1/GCF_000013425.1_ASM1342v1_genomic.fna.gz",
+          "bytes": 820675,
+          "sha256": "f30fbb37ecacc1c6baca951ada10065a39a29e019c81f664a5d1fca3d8818adb"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/013/425/GCF_000013425.1_ASM1342v1/GCF_000013425.1_ASM1342v1_genomic.gff.gz",
+          "bytes": 197738,
+          "sha256": "b39f4aaab06bcdfecd9080e8605039fc76e18f8f0ecb3043cba02c38b69f1571"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/013/425/GCF_000013425.1_ASM1342v1/GCF_000013425.1_ASM1342v1_genomic.gbff.gz",
+          "bytes": 1973372,
+          "sha256": "f63451526d0a4a09014a7f318e52d4f46914ec5be9ece4ae81d3e964481560d4"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/refseq/GCF_000013425.1_ASM1342v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/013/425/GCF_000013425.1_ASM1342v1/GCF_000013425.1_ASM1342v1_protein.faa.gz",
+          "bytes": 513725,
+          "sha256": "4343d2bef6d01b9fadc1217fd1c17230a30777ceb4bde96548d67a19de4b681b"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.fna",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/fna/GCA_000013425.1.fna",
+          "bytes": 2868452,
+          "sha256": "c4c4840ac5bbfbd54ba423a380c2c5f5b5d1fa26ca7c8d3b5cf6ab1d4c877751"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.gff",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gff/GCA_000013425.1.gff",
+          "bytes": 744899,
+          "sha256": "a4c27beddbb2c67e4c4a415a0d3da29f863aad299b0e301a51a4f9f9e2d69548"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.gbk",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/gbk/GCA_000013425.1.gbk",
+          "bytes": 6696707,
+          "sha256": "fb94eed9f5c4fde348852aaec8d5c7a13e64ad77504ec6a2a7ef30a8bb1ba831"
+        },
+        {
+          "path": "inputs/GCF_000013425.1/prokka/GCA_000013425.1.faa",
+          "url": "https://www.homd.org/ftp/genomes/PROKKA/V11.02/faa/GCA_000013425.1.faa",
+          "bytes": 1054885,
+          "sha256": "72a30df7dc6d2901dcfef03557be2d496fdcbb967f86f9db40bf580267578c69"
+        }
+      ],
+      "transformations": {
+        "Prokka": {
+          "seqid_mapping": {
+            "GCA_000013425.1|CP000253.1": "NC_007795.1"
+          },
+          "feature_rows": 2827,
+          "restored_version_headers": 1,
+          "coordinates_and_attributes_unchanged": true
+        }
+      }
+    },
+    {
+      "accession": "GCF_000067165.1",
+      "name": "Sorangium cellulosum",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NC_010162.1": [
+          13033779,
+          "14bfcf7da0d7439b2659f3ec77b54ffadc2f89bd403b40068eb2ea01db48e2e5"
+        ]
+      },
+      "tools": {
+        "Bakta": {
+          "fasta": "inputs/GCF_000067165.1/bakta/annotation.fna",
+          "gff": "inputs/GCF_000067165.1/bakta/annotation.gff3",
+          "gbff": "inputs/GCF_000067165.1/bakta/annotation.gbff",
+          "faa": "inputs/GCF_000067165.1/bakta/annotation.faa",
+          "version": "Bakta 1.1; database 3.0",
+          "sha256": {
+            "fasta": "341204cb63ee159c852162614c9c59b4b6877597afb7312b5ba95362155ea8cf",
+            "gff": "f5cacfb4bfbcc1035d272795bbdcd395b942c925b797c815fc852d19c8995985",
+            "gbff": "ae5ff15d378d2ee98c3346bb8430942697df4cccd16194472890c85a1fe0b122",
+            "faa": "751dfc28360874398462e700602e376469a18818755bdb120767c07c9d31b36e"
+          }
+        },
+        "RefSeq": {
+          "fasta": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_genomic.fna",
+          "gff": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_genomic.gff",
+          "gbff": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_genomic.gbff",
+          "faa": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_protein.faa",
+          "version": "NCBI RefSeq; exact annotation headers retained",
+          "sha256": {
+            "fasta": "8e76f99fd5246e94b1a505c1e85eac6fca39161237bba9721ca18c6d2eb39722",
+            "gff": "673fe1cea7c39b5788587577fdfcdc85d0a57c302b2bbd669b2448a19c3104a6",
+            "gbff": "0af3f5616b6c8ef52aede5fd2f5ed182633657b6d0a3744abc4c07dfe26b09a6",
+            "faa": "35bfb69a64f1857582f6bb547f831acff8b91bba08603080f0ae0ff24ce99124"
+          }
+        },
+        "Pyrodigal": {
+          "fasta": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_genomic.fna",
+          "gff": "inputs/GCF_000067165.1/pyrodigal/annotation.gff3",
+          "faa": "inputs/GCF_000067165.1/pyrodigal/annotation.faa",
+          "gbff": "inputs/GCF_000067165.1/pyrodigal/annotation.gbff",
+          "version": "3.7.1",
+          "settings": {
+            "meta": false,
+            "closed": false,
+            "translation_table": 11
+          },
+          "scope": "CDS predictions only; no functional annotations",
+          "sha256": {
+            "fasta": "8e76f99fd5246e94b1a505c1e85eac6fca39161237bba9721ca18c6d2eb39722",
+            "gff": "82dab9569210c40a4e360f901d7c4adea809c7d08684abbb931d3ac4fe980d14",
+            "gbff": "1edea2471ab3dd7d8d7aeae8dffbb13115b47c17597ae76f11f013175423c5ac",
+            "faa": "4c211219b1c97d24171a4d2d2be8a8aea70bfbea429f47c4a13a49e4850b6bd3"
+          }
+        }
+      },
+      "downloads": [
+        {
+          "path": "downloads/GCF_000067165.1-Sorangium-cellulosum.tar.gz",
+          "url": "https://zenodo.org/record/5253552/files/GCF_000067165.1-Sorangium-cellulosum.tar.gz?download=1",
+          "bytes": 43900338,
+          "sha256": "63c88fd7213f81537b09054a0fd164274a39edb228463dee4be3cab87f323f20"
+        },
+        {
+          "path": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/067/165/GCF_000067165.1_ASM6716v1/GCF_000067165.1_ASM6716v1_genomic.fna.gz",
+          "bytes": 3636057,
+          "sha256": "4e341b5df18ebf17ea29db0ca686805d4ae399f797fc92cb2efedf39a4bdfd19"
+        },
+        {
+          "path": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/067/165/GCF_000067165.1_ASM6716v1/GCF_000067165.1_ASM6716v1_genomic.gff.gz",
+          "bytes": 740423,
+          "sha256": "1448703138fe0e251bd582126ae82112c5e72a231c0a4d320ea23f0c0c588a77"
+        },
+        {
+          "path": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/067/165/GCF_000067165.1_ASM6716v1/GCF_000067165.1_ASM6716v1_genomic.gbff.gz",
+          "bytes": 8861407,
+          "sha256": "5ab5c2d7ca8f6e45b8925d854353abf22b70745fad984e9f77776bd1e7161a79"
+        },
+        {
+          "path": "inputs/GCF_000067165.1/refseq/GCF_000067165.1_ASM6716v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/067/165/GCF_000067165.1_ASM6716v1/GCF_000067165.1_ASM6716v1_protein.faa.gz",
+          "bytes": 2328361,
+          "sha256": "739326283ebd35248eba24883fff3f6b390fe7d3d2d4ddcf9065838deaf4d703"
+        }
+      ],
+      "transformations": {}
+    }
+  ],
+  "limitations": [
+    "Frozen historical Bakta/Prokka annotation versions; not a current-version benchmark.",
+    "Pyrodigal is structural only and not independent of Prodigal-based pipelines.",
+    "Sorangium has no verified Prokka output in this panel."
+  ],
+  "frozen_date": "2026-10-31",
+  "prediction_date": "2026-10-31"
+}

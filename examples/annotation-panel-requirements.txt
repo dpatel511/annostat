@@ -1,0 +1,4 @@
+# Optional test tools; not Annostat runtime dependencies.
+gffutils==0.13
+numpy>=1.24
+pyrodigal==3.7.1
