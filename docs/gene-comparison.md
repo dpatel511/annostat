@@ -64,8 +64,8 @@ Each protein category links directly to its evidence rows. Gene details separate
 the interpretation, boundary measurements, locus diagram, and alignment, with
 full source context expandable. Experimental support is not assessed.
 `plots/gene_consequences.svg` counts protein consequences among resolved pairs
-only. Re-running without `--gene-level` removes these two generated files and
-the gene comparison table, and returns to the aggregate report.
+only. Re-running without `--gene-level` removes the gene-specific text, plot and
+relationship/context tables, and returns to the aggregate report.
 
 Protein evidence has five categories: `identical`, `terminal_only`,
 `initiator_recoding`, `translation_difference`, and `limited`. Unaccepted
@@ -125,7 +125,7 @@ The complete table includes:
 | `n_terminal_residues_a/b`, `c_terminal_residues_a/b` | Extra terminal residues in the indicated predicted protein; their cause is distinguished by the consequence category |
 | `alignment_method`, `alignment_ambiguous`, `alignment_a`, `alignment_b` | Method and aligned sequences for changed, resolvable pairs; unchanged sequences are not duplicated |
 
-Gene-level JSON schema **1.4** records these fields, `consequence_counts`,
+Gene-level JSON schema **1.5** records these fields, `consequence_counts`,
 `unmatched_cds_counts`, and method details. Matching/status rules and existing columns are retained; first-codon context
 fields are documented below. In TSV, null values are blank; in JSON they are `null`.
 The legacy `protein_identical` field records literal translation equality, even
@@ -247,3 +247,49 @@ and source segment table rather than inferring a linear flanking region.
 These views still require the same unchanged assembly. Matching different strains
 or species would require separate sequence-based correspondence and is outside
 this reporting change.
+
+## Source context for unresolved CDSs
+
+The development report adds a **Source observations** panel when inspecting an
+unmatched, candidate or ambiguous locus. This is a separate context layer:
+accepted pairs, correspondence rules and protein calculations are unchanged.
+
+The panel checks the **other annotation** for overlapping gene-only records
+explicitly marked `pseudo`/`pseudogene`, RNA features (excluding protein-coding
+`mRNA` containers), and opposite-strand CDS models. A gene-only pseudogene has no
+CDS descendant through `Parent` links; its RNA children do not exclude it.
+Multipart records with the same explicit ID count once. The original source
+identifiers, source column and decoded attributes remain available. Existing
+partial/pseudogene/exception fields describe the selected CDS's own annotation,
+including the established parent-inheritance rules.
+
+A CDS touching coordinate 1 or the sequence length also receives sequence-edge
+context. Circularity is taken from that CDS's source annotation. Without an
+explicit circular declaration, the report says **not declared**; it does not
+assume the sequence is linear or that the CDS is truncated.
+
+All intervals are **1-based inclusive**. Overlap is the number of distinct
+physical genomic bases shared by the CDS and source feature, on the same
+sequence ID. Coverage is `100 × overlap_bp / covered_bp`, with separate CDS and
+source-feature denominators. These use interval unions, normalize circular
+wrapping and exclude intervening gaps; phase is not trimmed and repeated/slippage
+bases are counted once. RNA/pseudogene observations retain either or unspecified
+strand; opposite-strand CDS observations require explicit opposing strands.
+
+Gene schema **1.5** adds `source_context` to the gene-level JSON: distinct
+unresolved-model counts, methods and observations. Existing relationship rows
+and columns are unchanged, as is the calculation policy. Every observation is
+also in `tables/gene_context.tsv`, keyed by dataset, sequence ID, CDS strand and
+CDS ID. `source_attributes` is a JSON array of decoded original source rows
+(start, end, phase and attributes); `feature_segments` is their normalized
+physical union, not a proposed coding path. Boundary-only observations have null
+feature/overlap measurements (blank in TSV). An empty table retains its header.
+
+The HTML shows all observations for the selected unresolved group and supports
+searching source-feature identifiers/attributes. The text summary shows counts
+and up to five observations, naming the full exports. Models without a qualifying
+observation are explicitly uninformative: no observation does not mean no gene.
+A pseudogene/RNA overlap is a source assertion, not a functional classification
+or proof of why a call differs. No annotation is chosen, joined or corrected.
+
+Representations follow the [NCBI GFF3 documentation](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/).

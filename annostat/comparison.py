@@ -20,6 +20,7 @@ from annostat.gene_comparison import (
     genome_fingerprint, inherit_cds_attributes,
 )
 from annostat.models import Feature
+from annostat.locus_context import CONTEXT_COLUMNS, collect_source_context
 from annostat.gene_report import gene_text_report, render_gene_report
 from annostat.plots import write_cog_comparison, write_comparison_overview, write_gene_consequences
 from annostat.qc import feature_quality_findings, quality_summary, sequence_quality_findings
@@ -127,7 +128,8 @@ def _taxonomic_relationship(left: dict[str, object], right: dict[str, object]) -
     return "same species" if left_species == right_species else "different species"
 
 
-def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = None) -> dict[str, object]:
+def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = None,
+                        context_features: list[Feature] | None = None) -> dict[str, object]:
     """Calculate the normalized comparison profile for one input dataset."""
 
     validated = load_and_validate_annotation(dataset.fasta, dataset.gff)
@@ -142,6 +144,8 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
             f"dataset {dataset.label!r} failed validation with {len(errors)} error(s): "
             f"{first['rule_id']}: {first['message']}"
         )
+    if context_features is not None:
+        context_features.extend(validated.features)
     features = inherit_cds_attributes(validated.features)
     genome = validated.genome
     circular_seqids = frozenset(
@@ -520,8 +524,10 @@ def run_comparison(
     notify = progress or (lambda message: None)
     notify("Analyzing and quality-checking input genomes")
     models = [[], []] if gene_level else None
+    context_features = [[], []] if gene_level else None
     profiles = [
-        _annotation_profile(dataset, models[index] if models is not None else None)
+        _annotation_profile(dataset, models[index] if models is not None else None,
+                            context_features[index] if context_features is not None else None)
         for index, dataset in enumerate(datasets)
     ]
     if gene_level and profiles[0]["genome_sequence_sha256"] != profiles[1]["genome_sequence_sha256"]:
@@ -565,7 +571,10 @@ def run_comparison(
         "warnings": warnings,
     }
     if gene_level:
-        summary["gene_level_comparison"] = compare_cds(models[0], models[1], (labels[0], labels[1]))
+        gene = compare_cds(models[0], models[1], (labels[0], labels[1]))
+        gene["schema_version"] = "1.5"
+        gene["source_context"] = collect_source_context(gene, models, context_features, (labels[0], labels[1]))
+        summary["gene_level_comparison"] = gene
 
     tables_dir, plots_dir = output_dir / "tables", output_dir / "plots"
     tables_dir.mkdir(parents=True, exist_ok=True)
@@ -574,10 +583,13 @@ def run_comparison(
     _write_rows(tables_dir / "dataset_metrics.tsv", _profile_table_rows(profiles))
     _write_rows(tables_dir / "pairwise_comparisons.tsv", pairwise)
     gene_table = tables_dir / "gene_comparisons.tsv"
+    context_table = tables_dir / "gene_context.tsv"
     if gene_level:
         _write_rows(gene_table, summary["gene_level_comparison"]["relationships"], GENE_COMPARISON_COLUMNS)
+        _write_rows(context_table, gene["source_context"]["observations"], CONTEXT_COLUMNS)
     else:
         gene_table.unlink(missing_ok=True)
+        context_table.unlink(missing_ok=True)
     overview_plot = plots_dir / "dataset_overview.svg"
     cog_plot = plots_dir / "cog_comparison.svg"
     write_comparison_overview(overview_plot, profiles)

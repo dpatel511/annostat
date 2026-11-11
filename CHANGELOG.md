@@ -10,6 +10,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Source observations for unresolved same-assembly CDS loci: overlapping
+  gene-only pseudogene/RNA records, opposite-strand CDSs and sequence-edge
+  context, with original source attributes and explicit physical-base coverage.
+  HTML locus inspection, text summaries and `tables/gene_context.tsv` expose
+  this separate evidence layer; gene JSON schema advances to 1.5. Matching,
+  protein calculations, existing relationship columns and calculation policy
+  are unchanged. Context does not select or correct an annotation.
 - A checksum-pinned, five-assembly annotation audit with independent source
   protein, CDS correspondence, exported-table and SVG-geometry checks, plus an
   optional offline browser suite. Public data remain outside the repository.
