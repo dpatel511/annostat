@@ -78,6 +78,11 @@ annostat compare --gene-level \
   --genome Bakta genome.fna bakta.gff3 -o gene-comparison
 ```
 
+The development report opens with differences/review findings; All relationships
+retains access to unchanged pairs. Ambiguous links can be inspected together as
+a locus with per-source CDS counts and coordinate tracks. These groups do not
+establish gene split/merge events.
+
 Open `gene-comparison/comparison.html` and inspect a CDS to connect its coordinates,
 translation context and alignment to the classification. `comparison.txt` is the
 text summary; all relationships remain in `tables/gene_comparisons.tsv` and JSON.

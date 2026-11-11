@@ -55,7 +55,7 @@ class GeneReportTests(unittest.TestCase):
         self.assertEqual(int(tsv["protein_length_delta_aa"]), -2)
         self.assertEqual(json.loads((output / "comparison.json").read_text(encoding="utf-8")), saved)
         text = (output / "comparison.txt").read_text(encoding="utf-8")
-        self.assertIn("Resolved one-to-one CDS pairs: 113", text)
+        self.assertIn("Accepted one-to-one CDS pairs: 113", text)
         self.assertIn("Terminal-only difference: 1", text)
         self.assertIn("gyrB_A", text)
         self.assertIn("MA", text)
@@ -86,7 +86,8 @@ class GeneReportTests(unittest.TestCase):
         self.assertIn("unknown/internal-stop residues", text)
         self.assertIn("B-A +0 aa", text)
         svg = (output / "plots/gene_consequences.svg").read_text(encoding="utf-8")
-        self.assertIn("113 resolved", svg)
+        self.assertIn("113 accepted", svg)
+        self.assertIn("Accepted CDS pairs (count)", svg)
         self.assertIn("Terminal-only", svg)
         run_comparison(self.datasets, output)
         self.assertFalse((output / "comparison.txt").exists())
@@ -98,13 +99,33 @@ class GeneReportTests(unittest.TestCase):
         output = self.root / "empty"
         result = run_comparison(self.datasets, output, gene_level=True)["gene_level_comparison"]
         self.assertEqual(result["consequence_counts"], {})
-        self.assertIn("Resolved one-to-one CDS pairs: 0", (output / "comparison.txt").read_text(encoding="utf-8"))
+        self.assertIn("Accepted one-to-one CDS pairs: 0", (output / "comparison.txt").read_text(encoding="utf-8"))
         self.assertIn("n/a", (output / "comparison.txt").read_text(encoding="utf-8"))
         html = (output / "comparison.html").read_text(encoding="utf-8")
-        self.assertIn('No one-to-one CDS pairs were resolved', html)
+        self.assertIn('No one-to-one CDS pairs were accepted', html)
         self.assertNotIn('0.0% of accepted pairs', html)
         self.assertIn('Not available', html)
 
+    def test_ambiguous_group_payload_and_text_retain_all_candidate_links(self):
+        for dataset, features in zip(self.datasets, (
+                [("A1", 1, 30), ("A2", 31, 60)], [("x", 16, 45), ("y", 46, 75)])):
+            dataset.gff.write_text("##gff-version 3\n" + "\n".join(
+                f"chr\ttest\tCDS\t{start}\t{end}\t.\t+\t0\tID={identifier}"
+                for identifier, start, end in features) + "\n")
+        output = self.root / "ambiguous"
+        gene = run_comparison(self.datasets, output, gene_level=True)["gene_level_comparison"]
+        html = (output / "comparison.html").read_text()
+        groups = json.loads(re.search(r'<script id="gene-loci" type="application/json">(.*?)</script>', html, re.S).group(1))
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0]["cds_counts"], {"a": 2, "b": 2})
+        self.assertEqual(groups[0]["rows"], list(range(3)))
+        self.assertEqual(gene["status_counts"], {"ambiguous": 3})
+        self.assertIn('1 ambiguous overlap groups', html)
+        self.assertIn('id="gene-view"', html)
+        self.assertIn('Differences / needs review', html)
+        text = (output / "comparison.txt").read_text()
+        self.assertIn('A: A1, A2; B: x, y; 3 relationship rows', text)
+        self.assertTrue(all(row["protein_consequence"] == "unresolved" for row in gene["relationships"]))
 
 if __name__ == "__main__":
     unittest.main()
