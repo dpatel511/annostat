@@ -27,14 +27,16 @@ category counts, alignment identity arithmetic, TSV ID joins and the shared TTG
 example at 80844,80845,80846 (1-based inclusive). It writes
 `public-data-verification.json` with input hashes, package/policy/schema versions
 and results. Outputs overwrite the chosen comparison directory as in normal CLI use.
-This is a compact frozen regression, not a replacement for the six-assembly audit,
-independent source-protein checks or experimental biological validation. It does
+This is a compact frozen regression, not a replacement for the
+[five-assembly annotation panel](annotation-panel-testing.md), independent
+source-protein checks or experimental biological validation. It does
 not assess all report layouts or other organisms.
 
 CI uses `examples/check_installed_gene_comparison.py` separately: a small offline
 synthetic comparison from an isolated installed wheel checks initiation context,
-unapplied exceptions, QC, HTML/text/TSV/JSON exports, quiet mode and removal of
-stale gene-level outputs on an aggregate rerun. It downloads no public data.
+unapplied exceptions, source-context observations, QC, HTML/text/TSV/JSON exports,
+quiet mode and removal of stale gene-level outputs on an aggregate rerun. It
+downloads no public data.
 
 ```bash
 # Run from outside the repository with the wheel installed in this Python environment.
