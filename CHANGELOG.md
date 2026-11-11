@@ -6,7 +6,7 @@ and command-line executable retain the lowercase technical name `annostat`.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-11-11
 
 ### Added
 
@@ -36,7 +36,9 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   grey neighbouring CDS context. Repeated exact structures are explained
   separately from other overlapping alternatives; no split/merge is inferred.
 - Include up to three ambiguous overlap groups in the text interpretation.
-  Matching rules, scientific JSON/TSV, schemas and calculation policy are unchanged.
+  These locus views retain existing CDS relationship rows and protein measurements.
+  Source-context exports advance the gene schema to 1.5 as described above;
+  matching rules and calculation policy remain unchanged.
 
 ## [1.1.2] - 2026-10-30
 

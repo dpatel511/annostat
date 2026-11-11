@@ -9,7 +9,7 @@ GFF3** files. Outputs include offline HTML reports, JSON/TSV results, CDS FASTA
 exports and editable SVG plots. Annostat analyzes existing annotations; it does
 not annotate genomes or establish biological correctness.
 
-This README describes **1.1.2**. Check `annostat --version`; package indexes
+This README describes **1.2.0**. Check `annostat --version`; package indexes
 may provide an earlier release. See the changelog for version-specific fixes.
 
 ## Installation
@@ -78,7 +78,7 @@ annostat compare --gene-level \
   --genome Bakta genome.fna bakta.gff3 -o gene-comparison
 ```
 
-The development report opens with differences/review findings; All relationships
+The gene-level report opens with differences/review findings; All relationships
 retains access to unchanged pairs. Ambiguous links can be inspected together as
 a locus with per-source CDS counts and coordinate tracks. These groups do not
 establish gene split/merge events.

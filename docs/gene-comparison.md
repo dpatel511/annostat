@@ -63,7 +63,7 @@ interpretable differences only, excluding limited and unresolved evidence.
 Each protein category links directly to its evidence rows. Gene details separate
 the interpretation, boundary measurements, locus diagram, and alignment, with
 full source context expandable. Experimental support is not assessed.
-`plots/gene_consequences.svg` counts protein consequences among resolved pairs
+`plots/gene_consequences.svg` counts protein consequences among accepted pairs
 only. Re-running without `--gene-level` removes the gene-specific text, plot and
 relationship/context tables, and returns to the aggregate report.
 
@@ -204,7 +204,7 @@ This is a QC review finding, not a new structural-validation failure threshold.
 See [the frozen public-data check](public-data-check.md) for repeatable regression
 checks distinct from experimental biological validation.
 
-## Reviewing ambiguous loci (development checkout)
+## Reviewing ambiguous loci (1.2.0)
 
 The HTML table starts in **Differences / needs review**. It includes unaccepted
 relationships, structural/protein differences, and changed source attributes
@@ -250,7 +250,7 @@ this reporting change.
 
 ## Source context for unresolved CDSs
 
-The development report adds a **Source observations** panel when inspecting an
+Annostat 1.2.0 adds a **Source observations** panel when inspecting an
 unmatched, candidate or ambiguous locus. This is a separate context layer:
 accepted pairs, correspondence rules and protein calculations are unchanged.
 
