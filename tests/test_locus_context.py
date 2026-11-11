@@ -149,18 +149,18 @@ class SourceContextExportTests(unittest.TestCase):
             observation = gene["source_context"]["observations"][0]
             self.assertEqual((observation["overlap_bp"], observation["feature_strand"]), (20, "-"))
             self.assertEqual(gene["status_counts"], {"unmatched": 1})
-            with (out / "tables/gene_context.tsv").open(newline="") as handle:
+            with (out / "tables/gene_context.tsv").open(newline="", encoding="utf-8") as handle:
                 table = list(csv.DictReader(handle, delimiter="\t"))
             self.assertEqual(len(table), 1)
             self.assertEqual(table[0]["source_attributes"], observation["source_attributes"])
             self.assertIn("</script><img", json.loads(observation["source_attributes"])[0]["attributes"]["Note"])
-            html = (out / "comparison.html").read_text()
+            html = (out / "comparison.html").read_text(encoding="utf-8")
             self.assertNotIn("</script><img", html)
             payload = json.loads(re.search(r'<script id="gene-data" type="application/json">(.*?)</script>', html, re.S).group(1))
             self.assertEqual(payload["source_context"], gene["source_context"])
             self.assertIn("tables/gene_context.tsv", html)
-            self.assertEqual(json.loads((out / "comparison.json").read_text()), summary)
-            text = (out / "comparison.txt").read_text()
+            self.assertEqual(json.loads((out / "comparison.json").read_text(encoding="utf-8")), summary)
+            text = (out / "comparison.txt").read_text(encoding="utf-8")
             self.assertIn("Source context: 1 of 1 unresolved CDS models", text)
             self.assertIn("gene-only pseudogene", text)
             self.assertIn("20 bp", text)
@@ -181,5 +181,5 @@ class SourceContextExportTests(unittest.TestCase):
             out = root / "out"
             gene = run_comparison(inputs, out, gene_level=True)["gene_level_comparison"]
             self.assertEqual(gene["source_context"]["models_with_observations"], 0)
-            self.assertEqual(len((out / "tables/gene_context.tsv").read_text().splitlines()), 1)
-            self.assertIn("No qualifying source context recorded", (out / "comparison.txt").read_text())
+            self.assertEqual(len((out / "tables/gene_context.tsv").read_text(encoding="utf-8").splitlines()), 1)
+            self.assertIn("No qualifying source context recorded", (out / "comparison.txt").read_text(encoding="utf-8"))

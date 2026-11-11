@@ -114,7 +114,7 @@ class GeneReportTests(unittest.TestCase):
                 for identifier, start, end in features) + "\n")
         output = self.root / "ambiguous"
         gene = run_comparison(self.datasets, output, gene_level=True)["gene_level_comparison"]
-        html = (output / "comparison.html").read_text()
+        html = (output / "comparison.html").read_text(encoding="utf-8")
         groups = json.loads(re.search(r'<script id="gene-loci" type="application/json">(.*?)</script>', html, re.S).group(1))
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0]["cds_counts"], {"a": 2, "b": 2})
@@ -123,7 +123,7 @@ class GeneReportTests(unittest.TestCase):
         self.assertIn('1 ambiguous overlap groups', html)
         self.assertIn('id="gene-view"', html)
         self.assertIn('Differences / needs review', html)
-        text = (output / "comparison.txt").read_text()
+        text = (output / "comparison.txt").read_text(encoding="utf-8")
         self.assertIn('A: A1, A2; B: x, y; 3 relationship rows', text)
         self.assertTrue(all(row["protein_consequence"] == "unresolved" for row in gene["relationships"]))
 
