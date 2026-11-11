@@ -78,6 +78,14 @@ async function unclipped(page, selector) {
           // Inspect one representative of every available relationship/evidence type.
           const selected = new Map();
           gene.relationships.forEach(r => {const k = r.status+'/'+r.relationship+'/'+r.protein_consequence; if (!selected.has(k)) selected.set(k,r);});
+          for (const fact of gene.source_context?.observations || []) {
+            const key = 'source-context/' + fact.observation;
+            if (!selected.has(key)) {
+              const side = Object.keys(gene.cds_counts).indexOf(fact.dataset) === 0 ? 'a' : 'b';
+              const row = gene.relationships.find(r => r.seqid === fact.seqid && r.strand === fact.cds_strand && r['id_'+side] === fact.cds_id);
+              assert(row, 'source observation has no CDS relationship'); selected.set(key, row);
+            }
+          }
           for (const row of selected.values()) {
             await page.locator('input[type=search]').fill(row.id_a || row.id_b);
             const index = await page.evaluate(({a,b}) => {
@@ -90,7 +98,22 @@ async function unclipped(page, selector) {
             const detail = await page.locator('#gene-detail').innerText();
             for (const side of ['a','b']) if (row['id_'+side]) assert(detail.includes(row['id_'+side]));
             assert(detail.includes('1-based inclusive'), 'coordinate system not disclosed');
-            if (row.status !== 'matched') assert.equal(await page.locator('.gene-detail-stats').count(),0);
+            if (row.status !== 'matched') {
+              assert.equal(await page.locator('.gene-detail-stats').count(),0);
+              if (gene.source_context) {
+                assert.equal(await page.locator('.gene-source-context').count(),1);
+                for (const [side, label] of Object.keys(gene.cds_counts).entries()) {
+                  const id = row['id_'+'ab'[side]];
+                  for (const fact of gene.source_context.observations.filter(f => f.dataset === label && f.seqid === row.seqid && f.cds_strand === row.strand && f.cds_id === id)) {
+                    assert(detail.includes(fact.note), 'source observation note missing');
+                    if (fact.feature_id !== null) {
+                      assert(detail.includes(fact.feature_id), 'source identifier missing');
+                      assert(detail.includes(fact.overlap_bp.toLocaleString('en-US')+' bp overlap'), 'source overlap missing');
+                    }
+                  }
+                }
+              }
+            }
             assert.deepEqual(await unclipped(page,'.gene-locus svg'),[], 'locus text clipping');
             const ticks = (await page.locator('.gene-locus svg text').allTextContents()).filter(t => /^[\d,]+$/.test(t));
             assert(ticks.length >= 2);

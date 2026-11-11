@@ -5,6 +5,13 @@
     const rows = gene.relationships.map((row, index) => ({...row, index}));
     const labels = Object.keys(gene.cds_counts);
     const loci = JSON.parse(document.getElementById('gene-loci').textContent);
+    const contextByModel = new Map();
+    const contextKey = (dataset, seqid, strand, id) => JSON.stringify([dataset, seqid, strand, id]);
+    (gene.source_context?.observations || []).forEach(observation => {
+        const key = contextKey(observation.dataset, observation.seqid, observation.cds_strand, observation.cds_id);
+        if (!contextByModel.has(key)) contextByModel.set(key, []);
+        contextByModel.get(key).push(observation);
+    });
     const locusByRow = new Map();
     loci.forEach(group => group.rows.forEach(index => locusByRow.set(index, group)));
     const modelKey = (row, side) => JSON.stringify([side, row.seqid, row.strand, row[`id_${side}`]]);
@@ -17,6 +24,8 @@
             low: Math.min(...parts.flat()), high: Math.max(...parts.flat()),
             wraps: parts.some((part, i) => i && (row.strand === '+' ? part[0] < parts[i-1][0] : part[0] > parts[i-1][0]))});
     }));
+    const rowContext = row => ['a', 'b'].flatMap((side, index) =>
+        contextByModel.get(contextKey(labels[index], row.seqid, row.strand, row[`id_${side}`])) || []);
     const needsReview = row => row.status !== 'matched' || row.relationship !== 'exact' ||
         row.protein_consequence !== 'identical' || (row.changed_attributes || '').split(';').some(key => key && key !== 'Dbxref');
     const statusNames = {matched: 'Accepted pair', candidate: 'Candidate pair', ambiguous: 'Ambiguous correspondence', unmatched: 'Unmatched call'};
@@ -53,7 +62,7 @@
                 render: (value, type) => type === 'display' ? value === null ? '—' : signed(value) : value},
             {...column('Source context', row => ['seqid', 'product_a', 'product_b', 'gene_b', 'changed_attributes', 'segments_a', 'segments_b',
                 'partial_a', 'partial_b', 'pseudo_a', 'pseudo_b', 'pseudogene_a', 'pseudogene_b', 'exception_a', 'exception_b',
-                'dbxref_a', 'dbxref_b', 'status', 'relationship'].map(key => row[key] || '').join(' ')), visible: false}
+                'dbxref_a', 'dbxref_b', 'status', 'relationship'].map(key => row[key] || '').join(' ') + ' ' + JSON.stringify(rowContext(row))), visible: false}
         ], language: {emptyTable: 'No CDS relationships in these annotations.', search: 'Search current view:', zeroRecords: 'No relationships match this view. Try All relationships or clear the filters.'}
     });
     function updateViewSummary() {
@@ -169,6 +178,34 @@
         panel.append(el('p', 'Inspect a candidate link; this does not accept it as a match.', 'note'), links);
         return panel;
     }
+    function sourceContextPanel(row) {
+        if (row.status === 'matched' || !gene.source_context) return null;
+        const panel = el('section', undefined, 'gene-source-context');
+        panel.append(el('h4', 'Source observations for this unresolved locus'));
+        panel.append(el('p', 'These records provide context, not an accepted CDS counterpart or a cause of disagreement.', 'note'));
+        for (const model of locusModels(row)) {
+            const label = labels[model.side === 'a' ? 0 : 1];
+            const observations = contextByModel.get(contextKey(label, model.seqid, model.strand, model.id)) || [];
+            const section = el('article', undefined, 'gene-source-observation');
+            section.append(el('h5', `${model.side.toUpperCase()}: ${label} · ${model.id}`));
+            if (!observations.length) section.append(el('p', 'No qualifying overlapping record or sequence-edge context recorded. This does not establish biological absence.'));
+            for (const fact of observations) {
+                section.append(el('p', fact.note));
+                if (fact.feature_id !== null) {
+                    section.append(el('p', `${fact.context_dataset}: ${fact.feature_id} | ${fact.feature_type} | ${fact.feature_segments} (${fact.feature_strand}) | source: ${fact.feature_source}`));
+                    section.append(el('p', `${fact.overlap_bp.toLocaleString('en-US')} bp overlap; ${fact.cds_coverage_percent.toFixed(2)}% of ${fact.cds_covered_bp.toLocaleString('en-US')} physical CDS bases; ${fact.feature_coverage_percent.toFixed(2)}% of ${fact.feature_covered_bp.toLocaleString('en-US')} source-feature bases. Coordinates: 1-based inclusive.`));
+                    const attributes = el('details');
+                    attributes.append(el('summary', 'Original source rows and attributes'));
+                    attributes.append(el('pre', JSON.stringify(JSON.parse(fact.source_attributes), null, 2)));
+                    section.append(attributes);
+                }
+            }
+            panel.append(section);
+        }
+        const link = el('a', 'Download all source observations (TSV)'); link.href = 'tables/gene_context.tsv';
+        panel.append(link);
+        return panel;
+    }
     function alignment(row, full = false) {
         const a = row.alignment_a, b = row.alignment_b;
         const output = el('pre');
@@ -205,6 +242,8 @@
         detail.replaceChildren(header);
         const group = groupPanel(row);
         if (group) detail.append(group);
+        const sourceContext = sourceContextPanel(row);
+        if (sourceContext) detail.append(sourceContext);
         const length = side => row[`id_${side}`] === null ? 'no counterpart' : `${shown(row[`protein_length_${side}`])} aa`;
         const lengths = `Predicted protein lengths: A ${length('a')}; B ${length('b')}. `;
         detail.append(el('p', lengths + row.consequence_note, 'gene-interpretation'));

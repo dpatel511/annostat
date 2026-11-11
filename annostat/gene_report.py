@@ -8,6 +8,8 @@ from importlib.resources import files
 from pathlib import Path
 from statistics import median
 
+from annostat.locus_context import CONTEXT_LABELS
+
 
 CONSEQUENCE_LABELS = {
     "identical": "Identical protein",
@@ -145,6 +147,15 @@ def render_gene_report(summary: dict, plot: Path) -> str:
     if deltas:
         length_summary = f'''<p class="gene-length-directions">B shorter: <b>{sum(delta < 0 for delta in deltas):,}</b> · B longer: <b>{sum(delta > 0 for delta in deltas):,}</b> · Same length: <b>{deltas.count(0):,}</b></p>
 <p class="note">Among {len(deltas):,} interpretable protein differences, median absolute Δ: <strong>{median(abs(delta) for delta in deltas):g} aa</strong>; signed range: {min(deltas):+d} to {max(deltas):+d} aa. Δ is B minus A; limited and unresolved evidence is excluded.</p>'''
+    context = gene.get("source_context")
+    context_summary = ""
+    context_methods = f'<p>{escape(context["methods"])}</p>' if context is not None else ""
+    if context is not None:
+        context_summary = (f'<p><strong>Source context: {context["models_with_observations"]:,} of '
+                           f'{context["model_count"]:,} unresolved CDS models</strong> have recorded observations. '
+                           '<a href="tables/gene_context.tsv">Download source observations (TSV)</a>.</p>'
+                           '<p class="note">Inspect an unresolved locus for source RNA/pseudogene records, '
+                           'opposite-strand CDS overlaps and sequence-edge context. Observations do not explain causation.</p>')
     # HTML parsers recognize </script> even inside a JSON string. Escape markup
     # before embedding; the client always renders source attributes as text.
     payload = json.dumps(gene, ensure_ascii=True).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
@@ -171,7 +182,7 @@ def render_gene_report(summary: dict, plot: Path) -> str:
 <aside class="gene-unresolved"><h3>{unresolved:,} unresolved relationship rows</h3>
 <p>{gene["status_counts"].get("unmatched", 0):,} unmatched calls · {gene["status_counts"].get("candidate", 0):,} candidate rows · {gene["status_counts"].get("ambiguous", 0):,} ambiguous rows.</p>
 <p><strong>{sum(locus["kind"] == "ambiguous" for locus in loci):,} ambiguous overlap groups.</strong> Each group collects links sharing a CDS; groups are not inferred genes.</p>
-<p class="note">Relationship rows are not distinct genes. Unmatched calls do not establish biological absence; unresolved overlaps do not establish split/merge events.</p>
+<p class="note">Relationship rows are not distinct genes. Unmatched calls do not establish biological absence; unresolved overlaps do not establish split/merge events.</p>{context_summary}
 <button type="button" data-consequence="unresolved" aria-controls="gene-table" {'disabled' if not unresolved else ''}>Review unresolved rows</button></aside></div></div>
 <details class="gene-figure"><summary>Editable figure: protein consequence counts</summary>{plot.read_text(encoding="utf-8")}<a href="plots/gene_consequences.svg">Download SVG</a></details></section>
 <section class="gene-section" id="gene-evidence"><div class="gene-section-heading"><span>03 / Gene evidence</span><p>Every relationship is available</p></div>
@@ -185,7 +196,7 @@ def render_gene_report(summary: dict, plot: Path) -> str:
 </section><section class="gene-section" id="gene-methods"><div class="gene-section-heading"><span>04 / Methods and interpretation</span><p>Descriptive measurements; no significance tests</p></div>
 <h2>Read the measurements correctly</h2><p>Genomic coordinates are <strong>1-based inclusive</strong>. Segments remain in biological order; arrows show strand. Positive boundary deltas point downstream in the CDS strand direction. Protein length and terminal deltas are <strong>B minus A</strong>, in amino acids (aa).</p>
 <p>{escape(gene["consequence_methods"])}</p><p>Non-gap mismatches are measured at corresponding genomic codons, with initiation-context mismatches reported separately from other mismatches. They are not DNA mutations. Gap aa counts codons present in only one translated model. Identity includes gap columns. Unavailable measurements are not zero.</p>
-<p>{escape(gene["scope"])} These are descriptive annotation differences, not tests of significance, functional-impact predictions, or evidence that either annotation is correct. Percentages in the difference profile use all accepted pairs; they do not estimate annotation accuracy.</p>
+<p>{escape(gene["scope"])} These are descriptive annotation differences, not tests of significance, functional-impact predictions, or evidence that either annotation is correct. Percentages in the difference profile use all accepted pairs; they do not estimate annotation accuracy.</p>{context_methods}
 <p class="downloads"><a href="comparison.txt">Interpretation summary (TXT)</a><a href="tables/gene_comparisons.tsv">All relationships and evidence (TSV)</a><a href="plots/gene_consequences.svg">Consequence counts (SVG)</a></p>
 <details><summary>Bundled table-library license</summary><p>DataTables 3.1.4, locally bundled; no network access.</p><pre class="gene-license">{license_text}</pre></details>
 </section></section><script id="gene-data" type="application/json">{payload}</script><script id="gene-loci" type="application/json">{locus_payload}</script><script>{scripts}</script>'''
@@ -220,6 +231,25 @@ def gene_text_report(summary: dict) -> str:
                   "  No automatic split/merge or pairwise protein consequence is inferred for these links."]
     if len(ambiguous) > 3:
         lines.append("Additional groups remain available in the HTML locus views and full relationship exports.")
+    context = gene.get("source_context")
+    if context is not None:
+        lines += ["", f'Source context: {context["models_with_observations"]:,} of {context["model_count"]:,} unresolved CDS models have recorded observations.',
+                  "Observations are source context, not causes or accepted CDS counterparts."]
+        for observation in context["observations"][:5]:
+            overlap = observation["overlap_bp"]
+            measure = (f'; {overlap} bp physical overlap ({observation["cds_coverage_percent"]:.2f}% of '
+                       f'{observation["cds_covered_bp"]} CDS bases; {observation["feature_coverage_percent"]:.2f}% of '
+                       f'{observation["feature_covered_bp"]} source-feature bases)' if overlap is not None else
+                       "; " + observation["note"])
+            location = (f' at {observation["feature_segments"]} ({observation["feature_strand"]})'
+                        if overlap is not None else "")
+            lines.append(f'- {observation["dataset"]}: {observation["cds_id"]} | {CONTEXT_LABELS[observation["observation"]]} '
+                         f'({observation["context_dataset"]}: {observation["feature_id"] or "sequence edge"}){location}{measure}.')
+        if context["models_with_observations"] < context["model_count"]:
+            lines.append("No qualifying source context recorded for some unresolved models; this does not establish biological absence.")
+        if len(context["observations"]) > 5:
+            lines.append("First 5 observations shown; all observations remain in tables/gene_context.tsv and JSON.")
+        lines.append("Source-context methods: " + context["methods"])
     for title, guidance, rows in _review_groups(gene):
         lines += ["", f"{title}: {len(rows):,} relationship row{'s' if len(rows) != 1 else ''}", guidance]
         rows.sort(key=lambda row: (row["protein_length_delta_aa"] is None,
@@ -250,5 +280,5 @@ def gene_text_report(summary: dict) -> str:
                     lines.append(f"  {end.upper()} terminus B-A {row[f'{end}_terminal_delta_aa']:+d} aa; extra sequence in {'A' if row[f'{end}_terminal_residues_a'] else 'B'}: {residues[:60]}{'... (full sequence in TSV/JSON)' if len(residues) > 60 else ''}.")
     lines += ["", "Interpretation: differences do not establish functional effects or annotation correctness. Unmatched calls do not establish biological absence. Experimental support is not assessed by this report.",
               gene["consequence_methods"],
-              "Full evidence: comparison.json; tables/gene_comparisons.tsv; interactive comparison.html; plots/gene_consequences.svg.", ""]
+              "Full evidence: comparison.json; tables/gene_comparisons.tsv; tables/gene_context.tsv; interactive comparison.html; plots/gene_consequences.svg.", ""]
     return "\n".join(lines)
