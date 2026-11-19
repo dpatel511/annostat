@@ -20,7 +20,7 @@ class TranslationContextTests(unittest.TestCase):
         return next(iter(iter_cds_sequences([feature], {"chr": genomic})))
 
     def test_all_canonical_codons_match_independent_ncbi_tables(self):
-        for code in (1, 4, 11, 25):
+        for code in (1, 3, 4, 11, 25):
             table = CodonTable.unambiguous_dna_by_id[code]
             for bases in product("ACGT", repeat=3):
                 codon = "".join(bases)

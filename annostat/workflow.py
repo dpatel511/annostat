@@ -31,7 +31,7 @@ from annostat.report import render_html_report
 from annostat.sequences import (
     CALCULATION_POLICY,
     inherit_cds_attributes,
-    declared_genetic_codes,
+    genetic_code_source as resolve_genetic_code_source,
     iter_cds_sequences,
     recognized_start_codons,
     resolve_genetic_code,
@@ -39,7 +39,7 @@ from annostat.sequences import (
 from annostat.validation import load_and_validate_annotation, write_validation
 
 
-ANALYSIS_SCHEMA_VERSION = "1.2"
+ANALYSIS_SCHEMA_VERSION = "1.3"
 
 
 def _scientific_fingerprint(summary: dict[str, object]) -> str:
@@ -109,13 +109,8 @@ def _run_analysis(
         )
     features = inherit_cds_attributes(validated.features)
     genome = validated.genome
-    declared_codes = declared_genetic_codes(features)
     selected_genetic_code = resolve_genetic_code(features, genetic_code)
-    genetic_code_source = (
-        "command_line" if genetic_code is not None
-        else "gff3" if declared_codes
-        else "default"
-    )
+    genetic_code_source = resolve_genetic_code_source(features, genetic_code)
     circular_seqids = frozenset(
         feature.seqid
         for feature in features
@@ -154,6 +149,8 @@ def _run_analysis(
     stage_started = perf_counter()
     codon_counts: Counter[str] = Counter()
     start_counts: Counter[str] = Counter()
+    recognized_starts: Counter[str] = Counter()  # first codons in each CDS's own start set
+    table_counts: Counter[int] = Counter()
     cds_lengths: list[int] = []
     filtered_records = []
     quality_findings = feature_quality_findings(features, genome, circular_seqids)
@@ -171,10 +168,14 @@ def _run_analysis(
             genetic_code=selected_genetic_code,
         ):
             cds_lengths.append(record.length)
+            table_counts[record.genetic_code] += 1
+            first_codon = record.coding_nucleotide[:3].upper()
+            if len(first_codon) == 3 and first_codon in recognized_start_codons(record.genetic_code):
+                recognized_starts[first_codon] += 1
             quality_findings.extend(
                 sequence_quality_findings(
                     record,
-                    selected_genetic_code,
+                    record.genetic_code,
                     sequence_length=len(genome[record.feature.seqid]),
                     circular=record.feature.seqid in circular_seqids,
                 )
@@ -199,6 +200,8 @@ def _run_analysis(
     summary["annostat_version"] = __version__
     summary["genetic_code"] = selected_genetic_code
     summary["genetic_code_source"] = genetic_code_source
+    summary["genetic_code_counts"] = {str(code): count for code, count in sorted(table_counts.items())}
+    summary["recognized_start_count"] = sum(recognized_starts.values())
     summary["input_files"] = {"fasta": str(fasta_path), "gff3": str(gff_path)}
     summary["sequence_ids"] = sorted(genome)
     summary["circular_sequence_ids"] = sorted(circular_seqids)
@@ -269,20 +272,13 @@ def _run_analysis(
         "CDS length distribution (nucleotides)",
         cds_lengths,
     )
-    selected_start_codons = recognized_start_codons(selected_genetic_code)
-    common_start_codons = {"ATG", "GTG", "TTG"}
-    other_recognized_starts = sum(
-        start_counts.get(codon, 0)
-        for codon in selected_start_codons - common_start_codons
-    )
-    recognized_start_total = sum(
-        start_counts.get(codon, 0) for codon in selected_start_codons
-    )
+    # Bars count only codons recognized by each CDS's table, so no CDS is counted twice.
+    recognized_start_total = sum(recognized_starts.values())
     grouped_starts = {
-        "ATG": start_counts.get("ATG", 0),
-        "GTG": start_counts.get("GTG", 0),
-        "TTG": start_counts.get("TTG", 0),
-        "Other recognized": other_recognized_starts,
+        "ATG": recognized_starts["ATG"],
+        "GTG": recognized_starts["GTG"],
+        "TTG": recognized_starts["TTG"],
+        "Other recognized": recognized_start_total - sum(recognized_starts[codon] for codon in ("ATG", "GTG", "TTG")),
         "Unrecognized": sum(start_counts.values()) - recognized_start_total,
         "No complete first codon": len(cds_lengths) - sum(start_counts.values()),
     }
@@ -292,7 +288,8 @@ def _run_analysis(
         "First translated codons",
         grouped_starts,
         description=(
-            f"First codons of {len(cds_lengths):,} CDS models; NCBI table {selected_genetic_code} start set. "
+            f"First codons of {len(cds_lengths):,} CDS models; start sets of NCBI table(s) "
+            f"{', '.join(map(str, sorted(table_counts))) or selected_genetic_code}. "
             "Partial CDSs may begin internally."
         ),
         axis_label="Coding sequences",

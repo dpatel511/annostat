@@ -18,7 +18,7 @@ from annostat.cohort import build_cohort, write_cohort
 from annostat.comparison import GenomeInput, run_comparison
 from annostat.filtering import CdsFilter
 from annostat.ncbi import fetch_genomes
-from annostat.sequences import SUPPORTED_GENETIC_CODES, recognized_start_codons
+from annostat.sequences import SUPPORTED_GENETIC_CODES
 from annostat.validation import validate_annotation, write_validation
 from annostat.workflow import run_analysis
 
@@ -98,7 +98,7 @@ def build_parser(prog: str = "annostat") -> argparse.ArgumentParser:
         help="measure and report peak Python memory in addition to stage timings",
     )
     parser.add_argument(
-        "--genetic-code", type=int, choices=(1, 4, 11, 25), default=None, metavar="TABLE",
+        "--genetic-code", type=int, choices=(1, 3, 4, 11, 25), default=None, metavar="TABLE",
         help=(
             "override the NCBI translation table; otherwise use GFF3 transl_table "
             "or fall back to 11"
@@ -299,11 +299,7 @@ def _print_summary(summary: dict[str, object], output_dir: Path, elapsed: float)
 
     cds_count = int(summary["cds_count"])
     rna_count = sum(summary["rna_counts"].values())
-    start_counts = summary["start_codon_counts"]
-    recognized_starts = sum(
-        start_counts.get(codon, 0)
-        for codon in recognized_start_codons(int(summary["genetic_code"]))
-    )
+    recognized_starts = int(summary["recognized_start_count"])
     quality = summary["quality_control"]
     warning_count = quality["severity_counts"].get("warning", 0)
     information_count = quality["severity_counts"].get("info", 0)
@@ -523,9 +519,9 @@ def _main_compare(arguments: list[str]) -> int:
         try:
             code = int(raw_code)
         except ValueError:
-            parser.error(f"genetic code for {label!r} must be 1, 4, 11, or 25")
+            parser.error(f"genetic code for {label!r} must be 1, 3, 4, 11, or 25")
         if code not in SUPPORTED_GENETIC_CODES:
-            parser.error(f"genetic code for {label!r} must be 1, 4, 11, or 25")
+            parser.error(f"genetic code for {label!r} must be 1, 3, 4, 11, or 25")
         code_overrides[label] = code
     datasets = [
         GenomeInput(label, Path(fasta), Path(gff), genetic_code=code_overrides.get(label))

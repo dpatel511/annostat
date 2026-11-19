@@ -5,7 +5,6 @@ from __future__ import annotations
 from html import escape
 from pathlib import Path
 
-from annostat.sequences import recognized_start_codons
 
 
 def _percentage(part: int, whole: int) -> str:
@@ -47,9 +46,12 @@ def render_html_report(
     rna_count = sum(summary["rna_counts"].values())
     hypothetical = int(summary["hypothetical_cds_count"])
     cog_annotated = int(summary["cds_with_cog_count"])
-    start_counts = summary["start_codon_counts"]
-    recognized_codons = recognized_start_codons(int(summary["genetic_code"]))
-    recognized_starts = sum(start_counts.get(codon, 0) for codon in recognized_codons)
+    recognized_starts = int(summary["recognized_start_count"])
+    table_counts = summary["genetic_code_counts"]
+    table_text = (f'table {summary["genetic_code"]}' if len(table_counts) <= 1
+                  else "each CDS's translation table")
+    declared_tables = "; ".join(f"table {code}: {count:,} CDS" for code, count in table_counts.items()
+                                if int(code) != int(summary["genetic_code"]))
     quality = summary["quality_control"]
     validation = summary["validation"]
     filtered_export = summary["filtered_export"]
@@ -78,7 +80,7 @@ def render_html_report(
             _metric(
                 "Recognized starts",
                 _percentage(recognized_starts, cds_count),
-                f'{recognized_starts:,} first codons matching table {summary["genetic_code"]}; partial CDSs may start internally',
+                f'{recognized_starts:,} first codons matching {table_text}; partial CDSs may start internally',
             ),
             _metric("Genome GC", f'{quality["genome_gc_percent"]:.2f}%' if quality["genome_gc_percent"] is not None else "Not available", "canonical-base composition"),
             _metric("Coding density", f'{quality["coding_density_percent"]:.2f}%', "non-duplicated CDS coverage"),
@@ -168,7 +170,7 @@ table{{width:100%;border-collapse:collapse}} td{{border-bottom:1px solid var(--l
   </dl><p class="metric-note">Validation covers deterministic file integrity. Biological findings remain review candidates.</p></article>
   <article class="panel"><h2>Performance</h2><table>{stage_rows}<tr><td>Total measured stages</td><td>{performance["total_seconds"]:.4f} s</td></tr><tr><td>Peak Python memory</td><td>{escape(peak_memory_text)}</td></tr></table></article>
   <article class="panel"><h2>Methods and provenance</h2><dl>
-    <dt>Translation table</dt><dd>NCBI genetic code {int(summary["genetic_code"])} ({escape(str(summary["genetic_code_source"]).replace("_", " "))})</dd>
+    <dt>Translation table</dt><dd>NCBI genetic code {int(summary["genetic_code"])} ({escape(str(summary["genetic_code_source"]).replace("_", " "))}){f"; per-CDS GFF3 transl_table: {declared_tables}" if declared_tables else ""}</dd>
     <dt>FASTA</dt><dd>{escape(str(input_files["fasta"]))}</dd>
     <dt>GFF3</dt><dd>{escape(str(input_files["gff3"]))}</dd>
     <dt>Codon calculation</dt><dd>Pooled across complete CDS codons</dd>

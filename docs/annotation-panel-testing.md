@@ -145,3 +145,25 @@ database or new genome data was downloaded. These are computational/source
 consistency checks, not experimental biological validation or a ranking of
 current annotation-tool releases. Exact logs, source hashes, original failure
 and final wheel checks remain under the ignored audit directory.
+
+## Spliced fungal (table 1) checks
+
+`examples/check_fungal_comparison.py` independently checks `analyze` and
+`compare --gene-level` outputs for gene → mRNA → CDS annotations. It imports no
+Annostat calculations. It recounts genes, mRNAs, CDS models and CDS rows,
+retranslates every model with Biopython `CompoundLocation` extraction, and
+optionally joins source proteins by `protein_id`, transcript `Parent` or CDS ID.
+For comparisons it recomputes exact structural matches and requires accepted
+pairs with internal stops to be `limited`. With `--expect-self` it also requires
+every unpaired model to belong to a CDS-identical isoform group.
+
+```bash
+python examples/check_fungal_comparison.py --genetic-code 1 \
+  --analysis results/a genome.fa a.gff3 --source-proteins a.proteins.fa \
+  --comparison results/self A genome.fa a.gff3 B genome.fa a.gff3 --expect-self
+```
+
+Documented export conventions are classified rather than treated as failures:
+GenBank translations of an incomplete final codon, source resolution of codons
+with non-ACGT bases (Annostat keeps `X`), and `transl_except` recoding, which
+is checked against source proteins only.

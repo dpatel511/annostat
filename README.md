@@ -155,10 +155,13 @@ to the installed command.
   nuclear fungal inputs without `transl_table`. Overlaps between isoforms of one
   gene are not QC overlap/duplicate findings. The rRNA/tRNA completeness checks
   still expect bacterial 5S/16S/23S rRNAs.
-- NCBI tables **1, 4, 11 and 25** are supported. A consistent GFF3 `transl_table` is
-  used when present; otherwise the bacterial default is 11. Use `analyze --genetic-code TABLE`
-  or `compare --genetic-code LABEL TABLE` for inputs without that metadata.
-  Conflicting overrides are rejected.
+- NCBI tables **1, 3, 4, 11 and 25** are supported, per CDS. A CDS's own GFF3
+  `transl_table` (or its sequence `region`'s) applies to that CDS; every other CDS
+  uses `analyze --genetic-code TABLE` / `compare --genetic-code LABEL TABLE`, else a
+  table declared by every CDS, else the bacterial default 11. RefSeq fungal GFF3
+  declares tables only on mitochondrial CDSs, so pass `--genetic-code 1` for their
+  nuclear genes. Rows of one CDS that declare different tables are rejected, as is
+  an override when every CDS declares another table. Reports list per-table CDS counts.
 - Initiator M is a translation rule, not experimental evidence. Nonzero initial
   phase and 5′ partial markers prevent initiator recoding. Supported contiguous
   codon `transl_except` annotations include standard amino acids, Sec, Pyl, TERM
