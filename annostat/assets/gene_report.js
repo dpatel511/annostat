@@ -67,22 +67,28 @@
     });
     function updateViewSummary() {
         const info = table.page.info();
-        document.getElementById('gene-view-summary').textContent = `Showing ${info.recordsDisplay.toLocaleString('en-US')} of ${info.recordsTotal.toLocaleString('en-US')} relationship rows. Overview counts and exports retain all rows. The review view includes structural, protein and source-attribute changes except database references alone.`;
+        document.getElementById('gene-view-summary').textContent = `Showing ${info.recordsDisplay.toLocaleString('en-US')} of ${info.recordsTotal.toLocaleString('en-US')} relationships.`;
     }
     table.on('draw', updateViewSummary);
     table.search.fixed('gene-view', (search, row) => needsReview(row)).draw();
     document.getElementById('gene-view').addEventListener('change', event => {
-        table.search.fixed('gene-view', event.target.value === 'review' ? (search, row) => needsReview(row) : null).draw();
+        table.search.fixed('gene-status', null).search.fixed('gene-view', event.target.value === 'review' ? (search, row) => needsReview(row) : null).draw();
     });
+    const changedConsequences = ['terminal_only', 'initiator_recoding', 'translation_difference'];
+    const matchesConsequence = value => value === 'changed'
+        ? row => row.status === 'matched' && changedConsequences.includes(row.protein_consequence)
+        : row => row.protein_consequence === value;
     for (const [id, key] of [['gene-consequence', 'protein_consequence'], ['gene-structure', 'relationship']]) {
         document.getElementById(id).addEventListener('change', event => {
             const value = event.target.value;
-            table.search.fixed(id, value ? (search, row) => row[key] === value : null).draw();
+            const test = key === 'protein_consequence' ? matchesConsequence(value) : row => row[key] === value;
+            table.search.fixed('gene-status', null).search.fixed(id, value ? (search, row) => test(row) : null).draw();
         });
     }
     const productFilter = document.getElementById('gene-product-status');
     function filterProducts(value) {
         productFilter.value = value;
+        table.search.fixed('gene-status', null);
         if (value) {
             document.getElementById('gene-view').value = 'all';
             document.getElementById('gene-consequence').value = 'identical';
@@ -369,15 +375,21 @@
             filterProducts(product.dataset.productA + '|' + product.dataset.productB);
             document.getElementById('gene-evidence').scrollIntoView({block: 'start'});
         }
-        const category = event.target.closest('button[data-consequence]');
-        if (category) {
-            const value = category.dataset.consequence;
+        const jump = event.target.closest('button[data-consequence], button[data-filter-consequence], button[data-filter-structure], button[data-filter-status]');
+        if (jump) {
+            // Every jump starts from all rows so no stale filter hides the requested evidence.
+            const consequence = jump.dataset.consequence || jump.dataset.filterConsequence || '';
+            const structure = jump.dataset.filterStructure || '';
+            const statuses = (jump.dataset.filterStatus || '').split(',').filter(Boolean);
             productFilter.value = '';
-            table.search.fixed('gene-product-status', null);
-            document.getElementById('gene-consequence').value = value;
-            document.getElementById('gene-structure').value = '';
+            document.getElementById('gene-consequence').value = consequence;
+            document.getElementById('gene-structure').value = structure;
             document.getElementById('gene-view').value = 'all';
-            table.search.fixed('gene-view', null).search('').search.fixed('gene-structure', null).search.fixed('gene-consequence', (search, row) => row.protein_consequence === value).draw();
+            const test = matchesConsequence(consequence);
+            table.search('').search.fixed('gene-product-status', null).search.fixed('gene-view', null)
+                .search.fixed('gene-structure', structure ? (search, row) => row.relationship === structure : null)
+                .search.fixed('gene-status', statuses.length ? (search, row) => statuses.includes(row.status) : null)
+                .search.fixed('gene-consequence', consequence ? (search, row) => test(row) : null).draw();
             document.getElementById('gene-evidence').scrollIntoView({block: 'start'});
             document.querySelector('#gene-evidence input[type=search]').focus({preventScroll: true});
         }

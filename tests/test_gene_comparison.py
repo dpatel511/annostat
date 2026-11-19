@@ -138,7 +138,7 @@ class GeneComparisonTests(unittest.TestCase):
         self.assertEqual(len(rows), len(saved["gene_level_comparison"]["relationships"]))
         report = (output / "comparison.html").read_text(encoding="utf-8")
         self.assertIn("CDS annotation comparison", report)
-        self.assertIn("2 annotations", report)
+        self.assertIn("Identical assembly", report)
         self.assertNotIn("2 assemblies", report)
         self.assertIn("gene_comparisons.tsv", report)
         self.assertIn("1-based inclusive", report)

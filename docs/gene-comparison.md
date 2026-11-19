@@ -94,8 +94,14 @@ a correct annotation, or provide statistical tests.
 For a runnable WSL demonstration, verified real-data examples, and an explanation
 of what to show, see the [gene-level walkthrough](gene-level-demo.md).
 
-Start with `comparison.html` for resolved protein consequences, then filter and
-inspect individual relationships. Aggregate profiles are secondary. Use
+Start with `comparison.html`. Its overview states how many models pair one-to-one
+and assigns every CDS model of each source to exactly one outcome: accepted pair
+with identical protein, accepted pair with a protein difference, accepted pair
+with limited evidence, overlapping but unresolved (candidate or ambiguous), or no
+overlapping call. These per-model counts sum to each source's CDS models; they
+differ from relationship-row counts, which can list one model several times.
+Key findings link to their evidence rows. Then filter and inspect
+individual relationships. Aggregate profiles are secondary. Use
 `comparison.txt` for a short summary and `tables/gene_comparisons.tsv` for all
 side-by-side evidence:
 
