@@ -26,7 +26,7 @@ from annostat.plots import write_cog_comparison, write_comparison_overview, writ
 from annostat.qc import feature_quality_findings, quality_summary, sequence_quality_findings
 from annostat.sequences import (
     CALCULATION_POLICY,
-    declared_genetic_codes,
+    genetic_code_source as resolve_genetic_code_source,
     iter_cds_sequences,
     recognized_start_codons,
     resolve_genetic_code,
@@ -154,15 +154,12 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
         if feature.type == "region"
         and feature.attributes.get("Is_circular", "").lower() == "true"
     )
-    declared_codes = declared_genetic_codes(features)
     genetic_code = resolve_genetic_code(features, dataset.genetic_code)
-    genetic_code_source = (
-        "command_line" if dataset.genetic_code is not None
-        else "gff3" if declared_codes
-        else "default"
-    )
+    genetic_code_source = resolve_genetic_code_source(features, dataset.genetic_code)
     findings = feature_quality_findings(features, genome, circular_seqids)
     start_counts: Counter[str] = Counter()
+    table_counts: Counter[int] = Counter()
+    recognized_starts = 0
     cds_lengths: list[int] = []
     for record in iter_cds_sequences(
         features,
@@ -172,15 +169,17 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
         genetic_code=genetic_code,
     ):
         cds_lengths.append(record.length)
+        table_counts[record.genetic_code] += 1
+        recognized_starts += record.coding_nucleotide[:3].upper() in recognized_start_codons(record.genetic_code)
         if models is not None:
             models.append(cds_model(
-                record, len(genome[record.feature.seqid]), genetic_code,
+                record, len(genome[record.feature.seqid]), record.genetic_code,
                 record.feature.seqid in circular_seqids,
             ))
         findings.extend(
             sequence_quality_findings(
                 record,
-                genetic_code,
+                record.genetic_code,
                 sequence_length=len(genome[record.feature.seqid]),
                 circular=record.feature.seqid in circular_seqids,
             )
@@ -205,9 +204,6 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
     cog_data_available = bool(cog_counts)
     cog_total = sum(cog_counts.values())
     start_total = sum(start_counts.values())
-    recognized_starts = sum(
-        start_counts.get(codon, 0) for codon in recognized_start_codons(genetic_code)
-    )
     metadata = {**_gff_metadata(dataset.gff), **(dataset.metadata or {})}
     organism_name = metadata.get("organism_name")
     profile = {
@@ -225,6 +221,7 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
         "annotation_pipeline": metadata.get("annotation_pipeline"),
         "genetic_code": genetic_code,
         "genetic_code_source": genetic_code_source,
+        "genetic_code_counts": {str(code): count for code, count in sorted(table_counts.items())},
         "checkm_completeness": metadata.get("checkm_completeness"),
         "checkm_contamination": metadata.get("checkm_contamination"),
         "inputs": {"fasta": str(dataset.fasta), "gff3": str(dataset.gff)},
@@ -371,6 +368,7 @@ def _profile_table_rows(profiles: list[dict[str, object]]) -> list[dict[str, obj
             "annotation": profile["annotation_provider"] or profile["annotation_pipeline"],
             "genetic_code": profile["genetic_code"],
             "genetic_code_source": profile["genetic_code_source"],
+            "genetic_code_counts": ";".join(f"{code}:{count}" for code, count in profile["genetic_code_counts"].items()),
             **{metric: profile[metric] for metric in _NUMERIC_METRICS},
             "cog_data_available": profile["cog_data_available"],
             "cog_coverage_percent": (
@@ -408,7 +406,7 @@ def _render_report(summary: dict[str, object], plot_paths: list[Path]) -> str:
         f'<td><strong>{escape(str(profile["label"]))}</strong></td>'
         f'<td>{escape(str(profile["organism_name"] or "Not provided"))}</td>'
         f'<td>{escape(str(profile["input_source"]))}</td>'
-        f'<td>{profile["genetic_code"]}</td>'
+        f'<td>{_display_tables(profile)}</td>'
         f'<td>{profile["genome_length"]:,} bp</td><td>{profile["cds_count"]:,}</td>'
         f'<td>{_display_percent(profile["gc_percent"])}</td><td>{_display_percent(profile["coding_density_percent"])}</td>'
         f'<td>{_display_cog_coverage(profile)}</td></tr>'
@@ -491,6 +489,15 @@ def _display_percent(value: float | None) -> str:
     return f"{value:.2f}%" if value is not None else "Not available"
 
 
+def _display_tables(profile: dict[str, object]) -> str:
+    """Show the default table, or per-CDS table counts when CDSs use several."""
+
+    counts = profile["genetic_code_counts"]
+    if len(counts) <= 1:
+        return str(profile["genetic_code"])
+    return "; ".join(f"{code}: {count:,} CDS" for code, count in counts.items())
+
+
 def _display_cog_coverage(profile: dict[str, object]) -> str:
     """Format COG coverage without presenting missing annotation as zero."""
 
@@ -560,7 +567,7 @@ def run_comparison(
             "At least one annotation source does not provide COG categories. Category coverage, profile distances, and category plots involving that dataset are not available. COG-ID overlap is evaluated separately when both sources supply IDs."
         )
     summary = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "calculation_policy": CALCULATION_POLICY,
         "annostat_version": __version__,
         "analysis_type": "comparative_annotation_profile",

@@ -54,6 +54,7 @@ class CdsSequence:
     segments: tuple[Feature, ...] = ()
     translation_exception_indices: tuple[int, ...] = ()
     unapplied_translation_exceptions: tuple[str, ...] = ()
+    genetic_code: int = 11
 
     @property
     def length(self) -> int:

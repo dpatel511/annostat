@@ -12,7 +12,7 @@ from Bio.Data.IUPACData import protein_letters_3to1
 from annostat.models import CdsSequence, Feature
 
 
-CALCULATION_POLICY = "annotation-metrics-1.4"
+CALCULATION_POLICY = "annotation-metrics-1.5"
 CDS_ANNOTATION_ATTRIBUTES = (
     "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
     "start_range", "end_range", "transl_except", "exception",
@@ -78,13 +78,16 @@ _CODON_TABLE = {
 }
 _GENETIC_CODE_OVERRIDES = {
     1: {},
+    3: {"ATA": "M", "CTT": "T", "CTC": "T", "CTA": "T", "CTG": "T", "TGA": "W"},
     4: {"TGA": "W"},
     11: {},
     25: {"TGA": "G"},
 }
 SUPPORTED_GENETIC_CODES = frozenset(_GENETIC_CODE_OVERRIDES)
+_SUPPORTED_TEXT = "1, 3, 4, 11, or 25"
 _START_CODONS = {
     1: {"TTG", "CTG", "ATG"},
+    3: {"ATA", "ATG", "GTG"},
     4: {"TTA", "TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"},
     11: {"TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"},
     25: {"TTG", "ATG", "GTG"},
@@ -103,62 +106,106 @@ _EXCEPTION_AMINO_ACIDS = {
 }
 
 
-def declared_genetic_codes(features: Iterable[Feature]) -> frozenset[int]:
-    """Return supported NCBI translation tables declared by CDS or region rows.
+def _declared_code(feature: Feature) -> int | None:
+    """Return a feature's supported ``transl_table``; reject malformed or unsupported values."""
 
-    Malformed, unsupported, or conflicting declarations are rejected. The
-    validation workflow reports the same conditions as structured findings;
-    this guard prevents inspection from silently using the wrong table.
-    """
+    if "transl_table" not in feature.attributes:
+        return None
+    raw_code = feature.attributes["transl_table"].strip()
+    try:
+        code = int(raw_code)
+    except ValueError as error:
+        raise ValueError(
+            f"feature {feature.id!r} has invalid transl_table {raw_code!r}"
+        ) from error
+    if code not in SUPPORTED_GENETIC_CODES:
+        raise ValueError(
+            f"feature {feature.id!r} declares unsupported NCBI genetic code {code}; "
+            f"choose {_SUPPORTED_TEXT}"
+        )
+    return code
 
-    codes: set[int] = set()
-    for feature in features:
-        if feature.type not in {"CDS", "region"} or "transl_table" not in feature.attributes:
+
+def _cds_groups(features: Iterable[Feature]) -> tuple[dict[str, list[Feature]], dict[str, int]]:
+    """Group CDS rows by explicit ID and collect per-sequence region tables."""
+
+    grouped: dict[str, list[Feature]] = defaultdict(list)
+    region_codes: dict[str, int] = {}
+    for row_number, feature in enumerate(features):
+        if feature.type == "region":
+            code = _declared_code(feature)
+            if code is not None:
+                if region_codes.setdefault(feature.seqid, code) != code:
+                    raise ValueError(
+                        f"region rows for {feature.seqid!r} declare inconsistent transl_table values"
+                    )
             continue
-        raw_code = feature.attributes["transl_table"].strip()
-        try:
-            code = int(raw_code)
-        except ValueError as error:
-            raise ValueError(
-                f"feature {feature.id!r} has invalid transl_table {raw_code!r}"
-            ) from error
-        if code not in SUPPORTED_GENETIC_CODES:
-            raise ValueError(
-                f"feature {feature.id!r} declares unsupported NCBI genetic code {code}; "
-                "choose 1, 4, 11, or 25"
-            )
-        codes.add(code)
+        if feature.type != "CDS":
+            continue
+        # Only explicit IDs join rows. Coordinate-based fallback IDs represent
+        # independent anonymous features and must never merge accidentally.
+        grouped[feature.attributes.get("ID") or f"__anonymous_{row_number}"].append(feature)
+    return grouped, region_codes
+
+
+def _cds_declared_code(group_id: str, parts: list[Feature], region_codes: Mapping[str, int]) -> int | None:
+    """A CDS's own table, else its sequence region's table, else None."""
+
+    codes = {code for code in map(_declared_code, parts) if code is not None}
     if len(codes) > 1:
-        choices = ", ".join(map(str, sorted(codes)))
-        raise ValueError(f"annotation features declare conflicting translation tables: {choices}")
-    return frozenset(codes)
+        raise ValueError(f"multipart CDS {group_id!r} has inconsistent transl_table values")
+    return next(iter(codes)) if codes else region_codes.get(parts[0].seqid)
+
+
+def _table_declarations(features: Iterable[Feature]) -> tuple[frozenset[int], bool]:
+    """Return declared tables and whether any CDS lacks a declaration."""
+
+    features = list(features)
+    grouped, region_codes = _cds_groups(features)
+    declared = {code for feature in features if feature.type in {"CDS", "region"}
+                for code in [_declared_code(feature)] if code is not None}
+    undeclared = any(_cds_declared_code(group_id, parts, region_codes) is None
+                     for group_id, parts in grouped.items())
+    return frozenset(declared), undeclared
 
 
 def resolve_genetic_code(
     features: Iterable[Feature],
     requested: int | None = None,
 ) -> int:
-    """Resolve a safe translation table from GFF3 metadata and a CLI override.
+    """Resolve the default table for CDSs without their own ``transl_table``.
 
-    A declared ``transl_table`` takes precedence over the bacterial default of
-    table 11. An explicit override is accepted only when it agrees with a table
-    declared by the annotation.
+    A CDS's own ``transl_table`` (or its sequence region's) always applies to
+    that CDS. The returned default covers the remaining CDSs: the explicit
+    override, else a table declared uniformly by every CDS, else the bacterial
+    default of 11. An override is rejected when every CDS declares a different
+    table, because it would apply to nothing.
     """
 
     if requested is not None and requested not in SUPPORTED_GENETIC_CODES:
         raise ValueError(
-            f"unsupported NCBI genetic code {requested}; choose 1, 4, 11, or 25"
+            f"unsupported NCBI genetic code {requested}; choose {_SUPPORTED_TEXT}"
         )
-    declared = declared_genetic_codes(features)
-    if declared:
-        annotation_code = next(iter(declared))
-        if requested is not None and requested != annotation_code:
+    declared, undeclared = _table_declarations(features)
+    if requested is not None:
+        if declared and not undeclared and requested not in declared:
             raise ValueError(
                 f"requested genetic code {requested} conflicts with GFF3 transl_table "
-                f"{annotation_code}"
+                f"{', '.join(map(str, sorted(declared)))}"
             )
-        return annotation_code
-    return requested if requested is not None else 11
+        return requested
+    if len(declared) == 1 and not undeclared:
+        return next(iter(declared))
+    return 11
+
+
+def genetic_code_source(features: Iterable[Feature], requested: int | None = None) -> str:
+    """Describe where the default table for undeclared CDSs came from."""
+
+    if requested is not None:
+        return "command_line"
+    declared, undeclared = _table_declarations(features)
+    return "gff3" if len(declared) == 1 and not undeclared else "default"
 
 
 def recognized_start_codons(genetic_code: int) -> frozenset[str]:
@@ -168,7 +215,7 @@ def recognized_start_codons(genetic_code: int) -> frozenset[str]:
         return frozenset(_START_CODONS[genetic_code])
     except KeyError as error:
         raise ValueError(
-            f"unsupported NCBI genetic code {genetic_code}; choose 1, 4, 11, or 25"
+            f"unsupported NCBI genetic code {genetic_code}; choose {_SUPPORTED_TEXT}"
         ) from error
 
 
@@ -240,7 +287,7 @@ def translate_dna(
     """
 
     if genetic_code not in _GENETIC_CODE_OVERRIDES:
-        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 1, 4, 11, or 25")
+        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose {_SUPPORTED_TEXT}")
     sequence = sequence.upper()
     codon_table = {**_CODON_TABLE, **_GENETIC_CODE_OVERRIDES[genetic_code]}
     codons = [
@@ -363,22 +410,13 @@ def iter_cds_sequences(
     The iterator keeps sequence export memory-efficient: callers can consume and
     write each CDS immediately instead of retaining every translated sequence.
     GFF3 phase is applied after strand orientation and before translation.
+    Each CDS uses its own ``transl_table`` (or its sequence region's); others use
+    ``genetic_code``.
     """
 
-    grouped: dict[str, list[Feature]] = defaultdict(list)
-    order: list[str] = []
-    for row_number, feature in enumerate(features):
-        if feature.type != "CDS":
-            continue
-        # Only explicit IDs join rows. Coordinate-based fallback IDs represent
-        # independent anonymous features and must never merge accidentally.
-        group_id = feature.attributes.get("ID") or f"__anonymous_{row_number}"
-        if group_id not in grouped:
-            order.append(group_id)
-        grouped[group_id].append(feature)
-
-    for group_id in order:
-        parts = grouped[group_id]
+    grouped, region_codes = _cds_groups(features)
+    for group_id, parts in grouped.items():
+        code = _cds_declared_code(group_id, parts, region_codes) or genetic_code
         signatures = {(part.seqid, part.strand) for part in parts}
         if len(signatures) != 1:
             raise ValueError(
@@ -404,7 +442,7 @@ def iter_cds_sequences(
         protein = translate_dna(
             coding_nucleotide,
             codon_counts=codon_counts,
-            genetic_code=genetic_code,
+            genetic_code=code,
             complete_start=complete_cds_start(feature),
         )
         protein, exception_indices, unapplied = _apply_translation_exceptions(
@@ -421,4 +459,5 @@ def iter_cds_sequences(
             segments=tuple(ordered),
             translation_exception_indices=exception_indices,
             unapplied_translation_exceptions=unapplied,
+            genetic_code=code,
         )

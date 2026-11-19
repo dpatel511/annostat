@@ -201,10 +201,20 @@ class ValidationTests(unittest.TestCase):
                 root,
                 ">chr\nATGTGATAA\n",
                 "##gff-version 3\n"
+                "chr\ttest\tCDS\t1\t3\t.\t+\t0\tID=one;transl_table=25\n"
+                "chr\ttest\tCDS\t4\t9\t.\t+\t0\tID=one;transl_table=11\n",
+            )
+            result = validate_annotation(fasta, gff)
+            # Different CDSs may declare different tables; rows of one CDS may not.
+            (root / "mixed").mkdir()
+            mixed_fasta, mixed_gff = self._write_pair(
+                root / "mixed",
+                ">chr\nATGTGATAA\n",
+                "##gff-version 3\n"
                 "chr\ttest\tCDS\t1\t9\t.\t+\t0\tID=one;transl_table=25\n"
                 "chr\ttest\tCDS\t1\t9\t.\t+\t0\tID=two;transl_table=11\n",
             )
-            result = validate_annotation(fasta, gff)
+            self.assertNotIn("TRANSLATION_TABLE", validate_annotation(mixed_fasta, mixed_gff)["rule_counts"])
 
         translation_findings = [
             finding for finding in result["findings"]

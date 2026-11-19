@@ -86,8 +86,20 @@ def coding_sequence(ordered, genome):
     return str(SeqFeature(location).extract(Seq(genome[ordered[0]["seqid"]])))[ordered[0]["phase"] or 0:]
 
 
-def translate(ordered, genome, table):
+def cds_table(ordered, default, region_tables=None):
+    """A CDS's own transl_table, else its sequence region's, else the selected default."""
+    own = {int(row["attributes"]["transl_table"]) for row in ordered if "transl_table" in row["attributes"]}
+    return own.pop() if own else (region_tables or {}).get(ordered[0]["seqid"], default)
+
+
+def region_tables(rows):
+    return {row["seqid"]: int(row["attributes"]["transl_table"]) for row in rows
+            if row["type"] == "region" and "transl_table" in row["attributes"]}
+
+
+def translate(ordered, genome, default, regions=None):
     """Whole codons only; codons with non-ACGT bases become X, as Annostat documents."""
+    table = cds_table(ordered, default, regions)
     coding = coding_sequence(ordered, genome)
     whole = coding[: len(coding) - len(coding) % 3]
     masked = "".join(codon if set(codon) <= set("ACGT") else "NNN"
@@ -111,9 +123,14 @@ def signature(ordered):
 def check_analysis(directory, fasta, gff, table, source_proteins=None):
     summary = json.loads((directory / "summary.json").read_text(encoding="utf-8"))
     genome = read_fasta(fasta)
-    cds, counts = models(read_gff(gff))
+    rows = read_gff(gff)
+    cds, counts = models(rows)
+    regions = region_tables(rows)
     name = directory.name
     check(summary["genetic_code"] == table, f"{name}: genetic code {summary['genetic_code']} != {table}")
+    tables = Counter(str(cds_table(ordered, table, regions)) for ordered in cds.values())
+    check(summary["genetic_code_counts"] == dict(sorted(tables.items(), key=lambda item: int(item[0]))),
+          f"{name}: per-CDS table counts {summary['genetic_code_counts']} != {dict(tables)}")
     check(summary["cds_count"] == counts["cds_models"], f"{name}: CDS models {summary['cds_count']} != {counts['cds_models']}")
     check(summary["cds_row_count"] == counts["cds_rows"], f"{name}: CDS rows {summary['cds_row_count']} != {counts['cds_rows']}")
     for kind in ("gene", "mRNA"):
@@ -123,7 +140,7 @@ def check_analysis(directory, fasta, gff, table, source_proteins=None):
     # transl_except recoding is checked against the source proteins, not re-implemented here.
     exceptions = {cds_id for cds_id, ordered in cds.items() if has_exception(ordered)}
     mismatches = [cds_id for cds_id, ordered in cds.items() if cds_id in exported and cds_id not in exceptions
-                  and exported[cds_id] != translate(ordered, genome, table)]
+                  and exported[cds_id] != translate(ordered, genome, table, regions)]
     check(not mismatches, f"{name}: {len(mismatches)} proteins differ from Biopython, e.g. {mismatches[:3]}")
     source = Counter()
     if source_proteins:
@@ -145,7 +162,7 @@ def check_analysis(directory, fasta, gff, table, source_proteins=None):
                 kind = "different"
                 failures.append(f"{name}: {cds_id} differs from source protein {key}")
             source[kind] += 1
-    return dict(analysis=name, counts=counts, internal_stop_proteins=sum("*" in p for p in exported.values()),
+    return dict(analysis=name, counts=counts, genetic_code_counts=dict(tables), internal_stop_proteins=sum("*" in p for p in exported.values()),
                 biopython_mismatches=len(mismatches), transl_except_models=len(exceptions), source_proteins=dict(source))
 
 
@@ -155,15 +172,17 @@ def check_comparison(directory, left, right, table, expect_self=False):
     name = directory.name
     sides = []
     for label, fasta, gff in (left, right):
-        cds, _ = models(read_gff(gff))
-        sides.append((label, cds, read_fasta(fasta)))
-    check([d["genetic_code"] for d in data["datasets"]] == [table, table], f"{name}: dataset genetic codes differ")
-    for label, cds, _ in sides:
+        rows = read_gff(gff)
+        cds, _ = models(rows)
+        sides.append((label, cds, read_fasta(fasta), region_tables(rows)))
+    check([d["genetic_code"] for d in data["datasets"]] == [table, table], f"{name}: dataset default genetic codes differ")
+    for label, cds, _, _ in sides:
         check(gene["cds_counts"][label] == len(cds), f"{name}: {label} CDS count {gene['cds_counts'][label]} != {len(cds)}")
-    signatures = [Counter(signature(ordered) for ordered in cds.values()) for _, cds, _ in sides]
+    signatures = [Counter(signature(ordered) for ordered in cds.values()) for _, cds, _, _ in sides]
     exact = sum(min(count, signatures[1][key]) for key, count in signatures[0].items())
     check(gene["exact_model_count"] == exact, f"{name}: exact models {gene['exact_model_count']} != {exact}")
-    proteins = [{cds_id: translate(ordered, genome, table) for cds_id, ordered in cds.items()} for _, cds, genome in sides]
+    proteins = [{cds_id: translate(ordered, genome, table, regions) for cds_id, ordered in cds.items()}
+                for _, cds, genome, regions in sides]
     accepted = [row for row in gene["relationships"] if row["status"] == "matched"]
     stopped = [row for row in accepted if "*" in proteins[0][row["id_a"]] or "*" in proteins[1][row["id_b"]]]
     check(all(row["protein_consequence"] == "limited" for row in stopped), f"{name}: internal-stop pair not limited")
@@ -184,7 +203,8 @@ def check_comparison(directory, left, right, table, expect_self=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--genetic-code", type=int, default=1)
+    parser.add_argument("--genetic-code", type=int, default=1,
+                        help="table for CDSs without their own or a region transl_table (default 1)")
     parser.add_argument("--analysis", nargs=3, action="append", default=[], metavar=("DIR", "FASTA", "GFF3"))
     parser.add_argument("--source-proteins", action="append", default=[],
                         help="protein FASTA for the matching --analysis (same order); IDs are protein_id, Parent or CDS ID")

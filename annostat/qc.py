@@ -20,12 +20,14 @@ _STANDARD_TRNA_AMINO_ACIDS = frozenset(
 _TRNA_PATTERN = re.compile(r"tRNA-([A-Za-z]{3})", re.IGNORECASE)
 _START_CODONS = {
     1: frozenset({"TTG", "CTG", "ATG"}),
+    3: frozenset({"ATA", "ATG", "GTG"}),
     4: frozenset({"TTA", "TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"}),
     11: frozenset({"TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"}),
     25: frozenset({"TTG", "ATG", "GTG"}),
 }
 _STOP_CODONS = {
     1: frozenset({"TAA", "TAG", "TGA"}),
+    3: frozenset({"TAA", "TAG"}),
     4: frozenset({"TAA", "TAG"}),
     11: frozenset({"TAA", "TAG", "TGA"}),
     25: frozenset({"TAA", "TAG"}),
@@ -380,7 +382,7 @@ def sequence_quality_findings(
     """
 
     if genetic_code not in _START_CODONS:
-        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 1, 4, 11, or 25")
+        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 1, 3, 4, 11, or 25")
     findings: list[AnnotationIssue] = []
     if record.unapplied_translation_exceptions:
         findings.append(_finding_for_feature(

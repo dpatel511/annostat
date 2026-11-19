@@ -21,7 +21,7 @@ from annostat.parsers import parse_fasta, parse_gff
 
 
 VALIDATION_SCHEMA_VERSION = "1.0"
-RULESET_VERSION = "2026.08.2"
+RULESET_VERSION = "2026.11.1"
 _IUPAC_DNA = frozenset("ACGTRYSWKMBDHVN")
 
 
@@ -151,7 +151,7 @@ RULES = {
             "Annotation translation table is supported and consistent",
             "translation",
             "error",
-            "NCBI GFF3 CDS or region rows may declare transl_table; one consistent supported table is required for deterministic translation.",
+            "NCBI GFF3 CDS or region rows may declare transl_table; each declaration must be a supported table, and rows of one CDS must agree.",
             "https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/",
         ),
     )
@@ -379,11 +379,15 @@ def _phase_findings(features: list[Feature]) -> list[ValidationFinding]:
 
 
 def _translation_table_findings(features: list[Feature]) -> list[ValidationFinding]:
-    """Report malformed, unsupported, or conflicting CDS translation tables."""
+    """Report malformed or unsupported tables, and rows of one CDS that disagree.
+
+    Different CDSs may declare different tables (e.g. mitochondrial CDSs in a
+    nuclear genome); each CDS is translated with its own declaration.
+    """
 
     findings: list[ValidationFinding] = []
-    declared: dict[int, Feature] = {}
-    expected = "1, 4, 11, or 25"
+    declared: dict[str, dict[int, Feature]] = defaultdict(dict)
+    expected = "1, 3, 4, 11, or 25"
     for feature in features:
         if feature.type not in {"CDS", "region"} or "transl_table" not in feature.attributes:
             continue
@@ -401,7 +405,7 @@ def _translation_table_findings(features: list[Feature]) -> list[ValidationFindi
                 )
             )
             continue
-        if code not in {1, 4, 11, 25}:
+        if code not in {1, 3, 4, 11, 25}:
             findings.append(
                 _finding(
                     "TRANSLATION_TABLE",
@@ -412,18 +416,19 @@ def _translation_table_findings(features: list[Feature]) -> list[ValidationFindi
                 )
             )
             continue
-        declared.setdefault(code, feature)
-    if len(declared) > 1:
-        choices = ", ".join(map(str, sorted(declared)))
-        findings.append(
-            _finding(
-                "TRANSLATION_TABLE",
-                "annotation features declare conflicting translation tables",
-                feature=declared[min(declared)],
-                observed=choices,
-                expected="one consistent table",
+        if feature.type == "CDS" and feature.attributes.get("ID"):
+            declared[feature.attributes["ID"]].setdefault(code, feature)
+    for identifier, codes in sorted(declared.items()):
+        if len(codes) > 1:
+            findings.append(
+                _finding(
+                    "TRANSLATION_TABLE",
+                    f"rows of CDS {identifier!r} declare conflicting translation tables",
+                    feature=codes[min(codes)],
+                    observed=", ".join(map(str, sorted(codes))),
+                    expected="one table per CDS",
+                )
             )
-        )
     return findings
 
 

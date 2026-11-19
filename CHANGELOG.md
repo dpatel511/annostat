@@ -8,13 +8,38 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Translate each CDS with its own NCBI table. A GFF3 that declared
+  `transl_table` on only some CDSs (RefSeq fungal mitochondrial genes) previously
+  had that table applied to every CDS: 1,030 of 5,136 *S. pombe* RefSeq proteins
+  were mistranslated with table 4. CDSs without a declaration now use the
+  selected or default table, `--genetic-code` no longer conflicts with partial
+  declarations, and validation flags only rows of one CDS that disagree.
+- Count each first codon once in the start-codon plot. Under tables without a GTG
+  or TTG initiator (1, 3), such first codons were counted both in their own bar and
+  as unrecognized.
+- Prevent redirected terminal summaries from crashing on source labels or paths
+  outside the selected output encoding (for example Greek letters with Windows
+  CP1252). Such characters use backslash escapes; UTF-8 report files retain
+  their original text.
+
 ### Added
 
+- NCBI table 3 (yeast mitochondrial) for per-CDS `transl_table=3` and
+  `--genetic-code 3`.
+- `genetic_code_counts` and `recognized_start_count` in analysis JSON and
+  comparison dataset profiles (TSV `genetic_code_counts`); reports show per-CDS
+  table counts when several tables are used. Analysis schema 1.3, comparison
+  schema 1.2, validation ruleset 2026.11.1, calculation policy
+  `annotation-metrics-1.5`.
+- `examples/check_fungal_comparison.py`, an independent checker for spliced
+  gene/mRNA/CDS analyses and gene-level comparisons.
 - Support NCBI translation table 1 (standard code; TTG/CTG/ATG initiators) in
   `analyze --genetic-code 1`, `compare --genetic-code LABEL 1` and GFF3
   `transl_table=1`. The bacterial default remains table 11.
 - Report CDS GFF3 rows (`cds_row_count`) separately from CDS models, with gene
-  and mRNA counts in the HTML annotation summary. Analysis schema advances to 1.2.
+  and mRNA counts in the HTML annotation summary.
 - Explain product-label differences among accepted CDS pairs with reliable
   identical predicted proteins. HTML and text summaries separate missing,
   explicitly hypothetical and other product text, with named denominators,
@@ -31,14 +56,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   source attributes from that transcript and its gene (CDS values take precedence).
 - QC no longer reports overlapping, contained or adjacent-duplicate CDS findings
   between rows of one multipart CDS or between alternative transcripts of one
-  gene. Calculation policy advances to `annotation-metrics-1.4`.
-
-### Fixed
-
-- Prevent redirected terminal summaries from crashing on source labels or paths
-  outside the selected output encoding (for example Greek letters with Windows
-  CP1252). Such characters use backslash escapes; UTF-8 report files retain
-  their original text.
+  gene.
 
 ## [1.2.0] - 2026-11-11
 
