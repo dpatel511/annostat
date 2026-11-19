@@ -12,7 +12,7 @@ from Bio.Data.IUPACData import protein_letters_3to1
 from annostat.models import CdsSequence, Feature
 
 
-CALCULATION_POLICY = "annotation-metrics-1.3"
+CALCULATION_POLICY = "annotation-metrics-1.4"
 CDS_ANNOTATION_ATTRIBUTES = (
     "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
     "start_range", "end_range", "transl_except", "exception",
@@ -20,16 +20,29 @@ CDS_ANNOTATION_ATTRIBUTES = (
 
 
 def inherit_cds_attributes(features: tuple[Feature, ...]) -> tuple[Feature, ...]:
-    """Use unambiguous parent-gene context consistently, without editing inputs."""
-    parents = {feature.id: feature for feature in features if feature.type in {"gene", "pseudogene"}}
+    """Use unambiguous parent context consistently, without editing inputs.
+
+    A CDS inherits from a single gene/pseudogene parent, or from a single
+    mRNA/transcript parent and that transcript's single gene/pseudogene parent.
+    Precedence is CDS, then transcript, then gene.
+    """
+    genes = {feature.id: feature for feature in features if feature.type in {"gene", "pseudogene"}}
+    transcripts = {feature.id: feature for feature in features if feature.type in {"mRNA", "transcript"}}
+
+    def single_parent(feature: Feature, candidates: dict[str, Feature]) -> Feature | None:
+        parent_ids = feature.attributes.get("Parent", "").split(",")
+        return candidates.get(parent_ids[0]) if len(parent_ids) == 1 else None
+
     result = []
     for feature in features:
         inherited = {}
         if feature.type == "CDS":
-            parent_ids = feature.attributes.get("Parent", "").split(",")
-            if len(parent_ids) == 1 and parent_ids[0] in parents:
-                parent = parents[parent_ids[0]]
-                inherited = {key: parent.attributes[key] for key in CDS_ANNOTATION_ATTRIBUTES if key in parent.attributes}
+            transcript = single_parent(feature, transcripts)
+            gene = single_parent(transcript, genes) if transcript else single_parent(feature, genes)
+            for parent in (gene, transcript):
+                if parent is None:
+                    continue
+                inherited.update({key: parent.attributes[key] for key in CDS_ANNOTATION_ATTRIBUTES if key in parent.attributes})
                 if parent.type == "pseudogene":
                     inherited["pseudo"] = "true"
         result.append(replace(feature, attributes={**inherited, **feature.attributes}) if inherited else feature)
@@ -64,12 +77,14 @@ _CODON_TABLE = {
     "GGT": "G", "GGC": "G", "GGA": "G", "GGG": "G",
 }
 _GENETIC_CODE_OVERRIDES = {
+    1: {},
     4: {"TGA": "W"},
     11: {},
     25: {"TGA": "G"},
 }
 SUPPORTED_GENETIC_CODES = frozenset(_GENETIC_CODE_OVERRIDES)
 _START_CODONS = {
+    1: {"TTG", "CTG", "ATG"},
     4: {"TTA", "TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"},
     11: {"TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"},
     25: {"TTG", "ATG", "GTG"},
@@ -110,7 +125,7 @@ def declared_genetic_codes(features: Iterable[Feature]) -> frozenset[int]:
         if code not in SUPPORTED_GENETIC_CODES:
             raise ValueError(
                 f"feature {feature.id!r} declares unsupported NCBI genetic code {code}; "
-                "choose 4, 11, or 25"
+                "choose 1, 4, 11, or 25"
             )
         codes.add(code)
     if len(codes) > 1:
@@ -132,7 +147,7 @@ def resolve_genetic_code(
 
     if requested is not None and requested not in SUPPORTED_GENETIC_CODES:
         raise ValueError(
-            f"unsupported NCBI genetic code {requested}; choose 4, 11, or 25"
+            f"unsupported NCBI genetic code {requested}; choose 1, 4, 11, or 25"
         )
     declared = declared_genetic_codes(features)
     if declared:
@@ -153,7 +168,7 @@ def recognized_start_codons(genetic_code: int) -> frozenset[str]:
         return frozenset(_START_CODONS[genetic_code])
     except KeyError as error:
         raise ValueError(
-            f"unsupported NCBI genetic code {genetic_code}; choose 4, 11, or 25"
+            f"unsupported NCBI genetic code {genetic_code}; choose 1, 4, 11, or 25"
         ) from error
 
 
@@ -216,16 +231,16 @@ def translate_dna(
     genetic_code: int = 11,
     complete_start: bool = True,
 ) -> str:
-    """Translate complete codons using a supported prokaryotic NCBI code.
+    """Translate complete codons using a supported NCBI code.
 
-    Unknown or ambiguous codons become ``X``. Valid alternative bacterial start
-    codons translate to methionine in the first position, and a terminal stop is
+    Unknown or ambiguous codons become ``X``. Valid start codons of the selected
+    table translate to methionine in the first position, and a terminal stop is
     omitted from the returned protein sequence. If supplied, ``codon_counts`` is
     updated during the same traversal used for translation.
     """
 
     if genetic_code not in _GENETIC_CODE_OVERRIDES:
-        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 4, 11, or 25")
+        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 1, 4, 11, or 25")
     sequence = sequence.upper()
     codon_table = {**_CODON_TABLE, **_GENETIC_CODE_OVERRIDES[genetic_code]}
     codons = [

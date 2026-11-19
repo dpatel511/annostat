@@ -72,8 +72,10 @@ def analyze_features(features: Iterable[Feature]) -> dict[str, object]:
     cog_counts: Counter[str] = Counter()
     seen_features: set[tuple[str, str]] = set()
     gff_row_count = 0
+    cds_row_count = 0
     for row_index, feature in enumerate(features):
         gff_row_count += 1
+        cds_row_count += feature.type == "CDS"
         explicit_id = feature.attributes.get("ID")
         identity = (
             (feature.type, explicit_id)
@@ -103,6 +105,7 @@ def analyze_features(features: Iterable[Feature]) -> dict[str, object]:
         "total_features": total_features,
         "gff_row_count": gff_row_count,
         "cds_count": cds_count,
+        "cds_row_count": cds_row_count,
         "rna_counts": dict(sorted(rna_counts.items())),
         "feature_type_counts": dict(sorted(type_counts.items())),
         "hypothetical_cds_count": hypothetical_cds_count,

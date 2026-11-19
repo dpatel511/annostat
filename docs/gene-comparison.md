@@ -338,3 +338,21 @@ categories, pair counts, denominator and percentage. Relationship TSV/JSON adds
 distinct from an existing CDS with a missing product. The additive gene schema
 is **1.6**. Matching, translation calculations and calculation policy are unchanged.
 Re-running aggregate comparison removes this gene-specific table.
+
+## Spliced fungal models (table 1)
+
+Gene → mRNA → CDS annotations such as funannotate output are compared with the
+same structural rules. Each transcript's repeated CDS ID is one model with
+ordered blocks in transcription order; GFF3 phase is checked in that direction.
+Alternative isoforms are separate models and are never merged by gene ID. Select
+the nuclear standard code with `--genetic-code LABEL 1` when the GFF3 has no
+`transl_table`.
+
+Isoforms of one gene can have **identical CDS structure** (for example differing
+only in UTRs). Such duplicates cannot be paired uniquely, so they remain
+`ambiguous` rows with relationship `exact`, even in a self-comparison;
+`exact_model_count` still counts them. Proteins with internal `*` keep their
+structural relationship and receive `protein_consequence=limited`. Incomplete
+trailing bases are not translated, whereas GenBank `/translation` may include an
+unambiguous partial final codon. Matching does not establish orthology between
+isoforms or gene versions.

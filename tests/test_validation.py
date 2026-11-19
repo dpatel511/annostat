@@ -163,8 +163,11 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(translate_dna(sequence, genetic_code=25), "MG")
         self.assertEqual(translate_dna("TTATAA", genetic_code=4), "M")
         self.assertEqual(translate_dna("TTATAA", genetic_code=11), "L")
+        self.assertEqual(translate_dna(sequence, genetic_code=1), "M*")
+        self.assertEqual(translate_dna("GTGTAA", genetic_code=1), "V")
+        self.assertEqual(translate_dna("CTGTAA", genetic_code=1), "M")
         with self.assertRaisesRegex(ValueError, "unsupported NCBI genetic code"):
-            translate_dna(sequence, genetic_code=1)
+            translate_dna(sequence, genetic_code=2)
 
     def test_translation_table_is_validated_and_resolved_from_gff3(self) -> None:
         from annostat.models import Feature
@@ -176,6 +179,10 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(resolve_genetic_code([table_25]), 25)
         self.assertEqual(resolve_genetic_code([], None), 11)
         self.assertEqual(resolve_genetic_code([], 4), 4)
+        self.assertEqual(resolve_genetic_code([], 1), 1)
+        self.assertEqual(recognized_start_codons(1), {"TTG", "CTG", "ATG"})
+        table_1 = Feature("chr", "test", "CDS", 1, 9, None, "+", 0, {"ID": "code1", "transl_table": "1"})
+        self.assertEqual(resolve_genetic_code([table_1]), 1)
         self.assertEqual(recognized_start_codons(11), {
             "TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG",
         })
@@ -209,7 +216,7 @@ class ValidationTests(unittest.TestCase):
 
         for raw_code, expected_message in (
             ("not-a-number", "not an integer"),
-            ("1", "unsupported translation table"),
+            ("2", "unsupported translation table"),
         ):
             with self.subTest(transl_table=raw_code), tempfile.TemporaryDirectory() as directory:
                 fasta, gff = self._write_pair(

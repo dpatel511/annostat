@@ -50,6 +50,21 @@ class CliTests(unittest.TestCase):
         self.assertIn('Individual CDS models were not matched', stdout)
         self.assertIn('note: Source context differs.', stderr)
 
+    def test_table_1_is_accepted_per_dataset_and_unsupported_tables_are_rejected(self):
+        def compare(datasets, output, progress, **kwargs):
+            self.assertEqual([dataset.genetic_code for dataset in datasets], [1, None])
+            return self.comparison()
+
+        with patch('annostat.cli.run_comparison', side_effect=compare):
+            code, _, _ = self.invoke(self.compare_arguments('--genetic-code', 'A', '1'))
+        self.assertEqual(code, 0)
+        code, stdout, stderr = self.invoke(self.compare_arguments('--genetic-code', 'A', '2'))
+        self.assertEqual((code, stdout), (2, ''))
+        self.assertIn('must be 1, 4, 11, or 25', stderr)
+        code, _, stderr = self.invoke(['analyze', '-f', 'g.fna', '-g', 'a.gff3', '-o', 'out', '--genetic-code', '2'])
+        self.assertEqual(code, 2)
+        self.assertIn('--genetic-code: invalid choice', stderr)  # wording varies by Python version
+
     def test_gene_summary_exposes_denominators_and_per_source_counts(self):
         with patch('annostat.cli.run_comparison', return_value=self.comparison(gene=True)) as compare:
             code, stdout, stderr = self.invoke(self.compare_arguments('--gene-level'))

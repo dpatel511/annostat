@@ -19,11 +19,13 @@ _STANDARD_TRNA_AMINO_ACIDS = frozenset(
 )
 _TRNA_PATTERN = re.compile(r"tRNA-([A-Za-z]{3})", re.IGNORECASE)
 _START_CODONS = {
+    1: frozenset({"TTG", "CTG", "ATG"}),
     4: frozenset({"TTA", "TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"}),
     11: frozenset({"TTG", "CTG", "ATT", "ATC", "ATA", "ATG", "GTG"}),
     25: frozenset({"TTG", "ATG", "GTG"}),
 }
 _STOP_CODONS = {
+    1: frozenset({"TAA", "TAG", "TGA"}),
     4: frozenset({"TAA", "TAG"}),
     11: frozenset({"TAA", "TAG", "TGA"}),
     25: frozenset({"TAA", "TAG"}),
@@ -132,12 +134,43 @@ def _circular_intervals(feature: Feature, sequence_length: int) -> list[tuple[in
     return [(start, sequence_length), (1, end - sequence_length)]
 
 
+def _isoform_genes(features: Iterable[Feature]) -> dict[str, str]:
+    """Map CDS IDs to their gene through a single mRNA/transcript parent."""
+
+    transcript_genes = {
+        feature.id: feature.attributes["Parent"]
+        for feature in features
+        if feature.type in {"mRNA", "transcript"} and "," not in feature.attributes.get("Parent", ",")
+    }
+    return {
+        feature.id: transcript_genes[feature.attributes["Parent"]]
+        for feature in features
+        if feature.type == "CDS" and feature.attributes.get("Parent") in transcript_genes
+    }
+
+
+def _same_model_or_isoform(left: Feature, right: Feature, isoform_genes: Mapping[str, str]) -> bool:
+    """Rows of one multipart CDS, or CDSs of alternative transcripts of one gene."""
+
+    if left.id == right.id:
+        return True
+    gene = isoform_genes.get(left.id)
+    return gene is not None and gene == isoform_genes.get(right.id)
+
+
 def _overlap_findings(
     cds_features: Iterable[Feature],
     genome: Mapping[str, str] | None = None,
     circular_seqids: frozenset[str] = frozenset(),
+    isoform_genes: Mapping[str, str] | None = None,
 ) -> list[AnnotationIssue]:
-    """Find overlapping and fully contained CDS pairs with a sweep-line pass."""
+    """Find overlapping and fully contained CDS pairs with a sweep-line pass.
+
+    Alternative transcripts of one gene are expected to share CDS bases and
+    are not reported as overlapping or contained CDSs.
+    """
+
+    isoform_genes = isoform_genes or {}
 
     by_sequence: dict[str, list[Feature]] = defaultdict(list)
     for feature in cds_features:
@@ -158,7 +191,7 @@ def _overlap_findings(
             for start, end, index in segments:
                 active_segments = [segment for segment in active_segments if segment[1] >= start]
                 for _, other_end, other_index in active_segments:
-                    if index == other_index or ordered[index].id == ordered[other_index].id:
+                    if index == other_index or _same_model_or_isoform(ordered[index], ordered[other_index], isoform_genes):
                         continue
                     pair = tuple(sorted((index, other_index)))
                     overlap_by_pair[pair] += min(end, other_end) - start + 1
@@ -184,7 +217,7 @@ def _overlap_findings(
             active = [other for other in active if other.end >= current.start]
             for other in active:
                 # Multi-part CDS rows may share an ID and are one biological feature.
-                if other.id == current.id:
+                if _same_model_or_isoform(other, current, isoform_genes):
                     continue
                 overlap_bases = min(other.end, current.end) - current.start + 1
                 current_contained = current.end <= other.end
@@ -220,8 +253,16 @@ def _annotation_label(feature: Feature) -> tuple[str, str] | None:
     return None
 
 
-def _adjacent_duplicate_findings(cds_features: Iterable[Feature]) -> list[AnnotationIssue]:
-    """Report neighboring CDS entries with the same specific annotation label."""
+def _adjacent_duplicate_findings(
+    cds_features: Iterable[Feature],
+    isoform_genes: Mapping[str, str] | None = None,
+) -> list[AnnotationIssue]:
+    """Report neighboring CDS entries with the same specific annotation label.
+
+    Rows of one multipart CDS and alternative transcripts of one gene are skipped.
+    """
+
+    isoform_genes = isoform_genes or {}
 
     by_sequence: dict[str, list[Feature]] = defaultdict(list)
     for feature in cds_features:
@@ -233,7 +274,7 @@ def _adjacent_duplicate_findings(cds_features: Iterable[Feature]) -> list[Annota
         for left, right in zip(ordered, ordered[1:]):
             left_label = _annotation_label(left)
             right_label = _annotation_label(right)
-            if left_label is None or left_label != right_label:
+            if left_label is None or left_label != right_label or _same_model_or_isoform(left, right, isoform_genes):
                 continue
             gap = right.start - left.end - 1
             findings.append(
@@ -318,8 +359,9 @@ def feature_quality_findings(
                     "feature has an incomplete boundary annotation",
                 )
             )
-    findings.extend(_overlap_findings(cds_features, genome, circular_seqids))
-    findings.extend(_adjacent_duplicate_findings(cds_features))
+    isoform_genes = _isoform_genes(feature_list)
+    findings.extend(_overlap_findings(cds_features, genome, circular_seqids, isoform_genes))
+    findings.extend(_adjacent_duplicate_findings(cds_features, isoform_genes))
     findings.extend(_structural_rna_findings(feature_list))
     return findings
 
@@ -338,7 +380,7 @@ def sequence_quality_findings(
     """
 
     if genetic_code not in _START_CODONS:
-        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 4, 11, or 25")
+        raise ValueError(f"unsupported NCBI genetic code {genetic_code}; choose 1, 4, 11, or 25")
     findings: list[AnnotationIssue] = []
     if record.unapplied_translation_exceptions:
         findings.append(_finding_for_feature(

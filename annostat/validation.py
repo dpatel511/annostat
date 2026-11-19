@@ -383,7 +383,7 @@ def _translation_table_findings(features: list[Feature]) -> list[ValidationFindi
 
     findings: list[ValidationFinding] = []
     declared: dict[int, Feature] = {}
-    expected = "4, 11, or 25"
+    expected = "1, 4, 11, or 25"
     for feature in features:
         if feature.type not in {"CDS", "region"} or "transl_table" not in feature.attributes:
             continue
@@ -401,7 +401,7 @@ def _translation_table_findings(features: list[Feature]) -> list[ValidationFindi
                 )
             )
             continue
-        if code not in {4, 11, 25}:
+        if code not in {1, 4, 11, 25}:
             findings.append(
                 _finding(
                     "TRANSLATION_TABLE",

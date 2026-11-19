@@ -148,8 +148,15 @@ to the installed command.
   coordinates extending past the sequence length require a `region` with
   `Is_circular=true`. Gene comparison does not align different or rotated assemblies.
   Reconcile coordinates rather than renaming IDs to bypass checks.
-- NCBI tables **4, 11 and 25** are supported. A consistent GFF3 `transl_table` is
-  used when present; otherwise the default is 11. Use `analyze --genetic-code TABLE`
+- Spliced gene → mRNA → CDS models (for example funannotate fungal output) are
+  read as one CDS model per transcript CDS ID; alternative isoforms stay separate.
+  The report shows gene, mRNA, CDS-model and CDS-row counts. CDSs inherit
+  `product`/`Dbxref` from their mRNA, then gene. Use `--genetic-code 1` for
+  nuclear fungal inputs without `transl_table`. Overlaps between isoforms of one
+  gene are not QC overlap/duplicate findings. The rRNA/tRNA completeness checks
+  still expect bacterial 5S/16S/23S rRNAs.
+- NCBI tables **1, 4, 11 and 25** are supported. A consistent GFF3 `transl_table` is
+  used when present; otherwise the bacterial default is 11. Use `analyze --genetic-code TABLE`
   or `compare --genetic-code LABEL TABLE` for inputs without that metadata.
   Conflicting overrides are rejected.
 - Initiator M is a translation rule, not experimental evidence. Nonzero initial

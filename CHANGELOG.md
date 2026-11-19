@@ -8,15 +8,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Fixed
-
-- Prevent redirected terminal summaries from crashing on source labels or paths
-  outside the selected output encoding (for example Greek letters with Windows
-  CP1252). Such characters use backslash escapes; UTF-8 report files retain
-  their original text.
-
 ### Added
 
+- Support NCBI translation table 1 (standard code; TTG/CTG/ATG initiators) in
+  `analyze --genetic-code 1`, `compare --genetic-code LABEL 1` and GFF3
+  `transl_table=1`. The bacterial default remains table 11.
+- Report CDS GFF3 rows (`cds_row_count`) separately from CDS models, with gene
+  and mRNA counts in the HTML annotation summary. Analysis schema advances to 1.2.
 - Explain product-label differences among accepted CDS pairs with reliable
   identical predicted proteins. HTML and text summaries separate missing,
   explicitly hypothetical and other product text, with named denominators,
@@ -26,6 +24,21 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `product_status_a/b`; gene JSON schema advances to 1.6. Matching, translation
   calculations and calculation policy are unchanged. Product labels do not
   establish function or annotation correctness.
+
+### Changed
+
+- CDSs whose parent is an mRNA/transcript inherit `product`, `Dbxref` and other
+  source attributes from that transcript and its gene (CDS values take precedence).
+- QC no longer reports overlapping, contained or adjacent-duplicate CDS findings
+  between rows of one multipart CDS or between alternative transcripts of one
+  gene. Calculation policy advances to `annotation-metrics-1.4`.
+
+### Fixed
+
+- Prevent redirected terminal summaries from crashing on source labels or paths
+  outside the selected output encoding (for example Greek letters with Windows
+  CP1252). Such characters use backslash escapes; UTF-8 report files retain
+  their original text.
 
 ## [1.2.0] - 2026-11-11
 

@@ -145,6 +145,7 @@ table{{width:100%;border-collapse:collapse}} td{{border-bottom:1px solid var(--l
 <section class="metrics">{metrics}</section>
 <section class="summary-grid">
   <article class="panel"><h2>Annotation summary</h2><dl>
+    <dt>Annotation hierarchy</dt><dd>{int(summary["feature_type_counts"].get("gene", 0)):,} genes; {int(summary["feature_type_counts"].get("mRNA", 0)):,} mRNAs; {cds_count:,} CDS models from {int(summary["cds_row_count"]):,} CDS rows</dd>
     <dt>RNA features</dt><dd>{rna_count:,}</dd>
     <dt>Hypothetical CDS</dt><dd>{hypothetical:,} ({_percentage(hypothetical, cds_count)})</dd>
     <dt>Gene names</dt><dd>{int(summary["cds_with_gene_count"]):,} ({_percentage(int(summary["cds_with_gene_count"]), cds_count)})</dd>
