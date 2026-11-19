@@ -98,7 +98,7 @@ def build_parser(prog: str = "annostat") -> argparse.ArgumentParser:
         help="measure and report peak Python memory in addition to stage timings",
     )
     parser.add_argument(
-        "--genetic-code", type=int, choices=(4, 11, 25), default=None, metavar="TABLE",
+        "--genetic-code", type=int, choices=(1, 4, 11, 25), default=None, metavar="TABLE",
         help=(
             "override the NCBI translation table; otherwise use GFF3 transl_table "
             "or fall back to 11"
@@ -523,9 +523,9 @@ def _main_compare(arguments: list[str]) -> int:
         try:
             code = int(raw_code)
         except ValueError:
-            parser.error(f"genetic code for {label!r} must be 4, 11, or 25")
+            parser.error(f"genetic code for {label!r} must be 1, 4, 11, or 25")
         if code not in SUPPORTED_GENETIC_CODES:
-            parser.error(f"genetic code for {label!r} must be 4, 11, or 25")
+            parser.error(f"genetic code for {label!r} must be 1, 4, 11, or 25")
         code_overrides[label] = code
     datasets = [
         GenomeInput(label, Path(fasta), Path(gff), genetic_code=code_overrides.get(label))

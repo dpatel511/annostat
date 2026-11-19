@@ -39,7 +39,7 @@ from annostat.sequences import (
 from annostat.validation import load_and_validate_annotation, write_validation
 
 
-ANALYSIS_SCHEMA_VERSION = "1.1"
+ANALYSIS_SCHEMA_VERSION = "1.2"
 
 
 def _scientific_fingerprint(summary: dict[str, object]) -> str:
