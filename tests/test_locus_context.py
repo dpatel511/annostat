@@ -145,7 +145,7 @@ class SourceContextExportTests(unittest.TestCase):
             out = root / "out"
             summary = run_comparison(inputs, out, gene_level=True)
             gene = summary["gene_level_comparison"]
-            self.assertEqual(gene["schema_version"], "1.5")
+            self.assertEqual(gene["schema_version"], "1.6")
             observation = gene["source_context"]["observations"][0]
             self.assertEqual((observation["overlap_bp"], observation["feature_strand"]), (20, "-"))
             self.assertEqual(gene["status_counts"], {"unmatched": 1})

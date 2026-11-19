@@ -116,6 +116,7 @@ The complete table includes:
 | `cds_length_a`, `cds_length_b`, `protein_length_a`, `protein_length_b` | CDS length in nucleotides and translated-protein length in amino acids |
 | `gene_a`, `gene_b`, `product_a`, `product_b`, `dbxref_a`, `dbxref_b` | Side-by-side names, descriptions, and database cross-references when supplied |
 | `overlap_bp`, `start_delta_bp`, `stop_delta_bp` | Shared physical bases and strand-aware boundary shifts from A to B |
+| `product_status_a`, `product_status_b` | Missing / explicitly hypothetical / other product text; null for no counterpart |
 | `protein_identical`, `changed_attributes` | Equality of Annostat-translated protein sequences and the names of differing annotation attributes |
 | `start_codon_a`, `start_codon_b`, `genetic_code_a`, `genetic_code_b` | First translated codon and translation table; not proof of initiation |
 | `protein_consequence`, `consequence_note` | Descriptive protein category and reason; unresolved correspondence is not a protein comparison |
@@ -293,3 +294,47 @@ A pseudogene/RNA overlap is a source assertion, not a functional classification
 or proof of why a call differs. No annotation is chosen, joined or corrected.
 
 Representations follow the [NCBI GFF3 documentation](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/).
+
+## Product labels on identical predicted proteins
+
+The gene-level report also separates protein-sequence differences from source
+description differences. The **Product labels** table uses only accepted pairs
+with `protein_consequence=identical`. Different predicted proteins, limited
+translation evidence and unresolved links are excluded.
+
+Rows identify source A and columns identify B. Each product belongs to one of
+three descriptive categories:
+
+| Category | Definition |
+|---|---|
+| Missing product | Absent or blank `product` attribute |
+| Explicit hypothetical | Product contains the case-insensitive substring `hypothetical protein` |
+| Other product text | Any other nonempty product, including DUF/UPF and uncertain descriptions |
+
+Counts and percentages use **all reliable identical-protein pairs**, including
+missing descriptions. The nine cells sum to that denominator; zero-denominator
+percentages are unavailable (`null` in JSON, blank in TSV). Nonzero percentages
+below 0.1% display as `<0.1%`; exports retain the numeric value. Each nonzero HTML
+cell filters the evidence table to its pairs. The Product labels selector clears
+its filter; protein-category buttons also clear it.
+
+The report separately counts differences in exported product text after
+whitespace normalization, comparing case-sensitively and treating absent/blank
+values alike. Gene-symbol provided/missing counts use the same identical-protein
+denominator. Unresolved counts identify distinct CDS models in each source,
+rather than counting every many-to-many relationship row.
+
+For example, “A has other product text; B is explicitly hypothetical” means the
+same predicted protein has different descriptions. It does **not** establish a
+newly resolved function or which annotation is correct. A source without product
+fields appears as missing, rather than as fully characterized. This is a source
+label convention, not a controlled functional-ontology comparison.
+
+These measurements appear in HTML, `comparison.txt`, and
+`gene_level_comparison.description_summary` in JSON. The matrix is also exported
+as `tables/gene_product_status.tsv`, including both source labels, status
+categories, pair counts, denominator and percentage. Relationship TSV/JSON adds
+`product_status_a` and `product_status_b`; a missing counterpart has null status,
+distinct from an existing CDS with a missing product. The additive gene schema
+is **1.6**. Matching, translation calculations and calculation policy are unchanged.
+Re-running aggregate comparison removes this gene-specific table.

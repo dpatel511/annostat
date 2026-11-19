@@ -62,6 +62,25 @@ class CliTests(unittest.TestCase):
         self.assertIn('comparison.txt', stdout)
         self.assertIn('Agreement is not annotation accuracy', stdout)
 
+    def test_redirected_summary_escapes_labels_outside_the_stream_encoding(self):
+        from io import BytesIO, TextIOWrapper
+
+        summary = self.comparison(gene=True)
+        gene = summary['gene_level_comparison']
+        gene['cds_counts'] = {'Source μ': 3, 'B': 2}
+        gene['unmatched_cds_counts'] = {'Source μ': 1, 'B': 0}
+        buffer = BytesIO()
+        stream = TextIOWrapper(buffer, encoding='cp1252', errors='strict', newline='\n')
+        self.addCleanup(stream.close)
+        with redirect_stdout(stream), redirect_stderr(StringIO()), patch(
+            'annostat.cli.run_comparison', return_value=summary
+        ):
+            code = main(self.compare_arguments('--gene-level'))
+        stream.flush()
+        self.assertEqual(code, 0)
+        self.assertEqual(stream.encoding, 'cp1252')
+        self.assertIn('Source \\u03bc: 3 CDS', buffer.getvalue().decode('cp1252'))
+
     def test_empty_gene_summary_does_not_report_zero_as_measured_percentage(self):
         summary = self.comparison(gene=True)
         gene = summary['gene_level_comparison']

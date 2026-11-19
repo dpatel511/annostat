@@ -268,6 +268,82 @@ def check_pair(gene, a, b):
     check(gene['consequence_counts'] == dict(Counter(r['protein_consequence'] for r in rows if r['status'] == 'matched')), 'consequence totals differ')
 
 
+def check_descriptions(folder, gene, a, b):
+    """Check label summaries against independently parsed source models."""
+    rows = gene['relationships']
+    labels = list(gene['cds_counts'])
+    expected, _, _ = expected_graph(a, b)
+    accepted = [(i, j) for (i, j), status in expected.items() if status == 'matched']
+    by_pair = {(row['id_a'], row['id_b']): row for row in rows}
+    identical = []
+    for i, j in accepted:
+        left, right = a[i], b[j]
+        row = by_pair[i, j]
+        reliable = (bool(left['protein']) and left['protein'] == right['protein'] and
+                    not (set(left['protein']) - set('ACDEFGHIKLMNPQRSTVWYOU')) and
+                    left['codons'] == right['codons'] and len(set(left['codons'])) == len(left['codons']) and
+                    not row['unapplied_transl_except_a'] and not row['unapplied_transl_except_b'])
+        check((row['protein_consequence'] == 'identical') == reliable, 'source-derived identical-protein membership differs')
+        if reliable:
+            identical.append((i, j))
+
+    def status(model):
+        product = attr(model['attrs'], 'product')
+        if product is None or not product.strip():
+            return 'missing'
+        return 'explicit_hypothetical' if 'hypothetical protein' in product.lower() else 'other_product_text'
+
+    for row in rows:
+        for side, models in [('a', a), ('b', b)]:
+            model = models.get(row['id_'+side])
+            check(row['product_status_'+side] == (status(model) if model else None), 'source product-status field differs')
+    matrix = Counter((status(a[i]), status(b[j])) for i, j in identical)
+    description = gene['description_summary']
+    total = len(identical)
+    check(description['accepted_pairs'] == len(accepted), 'description accepted denominator differs')
+    check(description['identical_protein_pairs'] == total, 'description identical denominator differs')
+    different = sum(by_pair[i,j]['protein_consequence'] in {'terminal_only', 'initiator_recoding', 'translation_difference'} for i,j in accepted)
+    limited = sum(by_pair[i,j]['protein_consequence'] == 'limited' for i,j in accepted)
+    check(description['interpretable_protein_difference_pairs'] == different and description['limited_protein_pairs'] == limited,
+          'description exclusion counts differ')
+    check(total+different+limited == len(accepted), 'description accepted partition differs')
+    unresolved = {label: len(set(models)-{pair[index] for pair in accepted})
+                  for index, (label, models) in enumerate(zip(labels, (a,b)))}
+    check(description['unresolved_cds_counts'] == unresolved, 'distinct unresolved model count differs')
+    changed = sum((attr(a[i]['attrs'], 'product') or '') != (attr(b[j]['attrs'], 'product') or '') for i,j in identical)
+    check(description['product_text_difference_pairs'] == changed, 'source description-difference count differs')
+    symbols = {label: {'provided': sum(bool(attr(models[pair[index]]['attrs'], 'gene')) for pair in identical),
+                       'missing': sum(not attr(models[pair[index]]['attrs'], 'gene') for pair in identical)}
+               for index, (label, models) in enumerate(zip(labels, (a,b)))}
+    check(description['gene_symbol_counts'] == symbols, 'source gene-symbol counts differ')
+    statuses = ('missing', 'explicit_hypothetical', 'other_product_text')
+    cells = description['product_status_matrix']
+    check(len(cells) == 9 and {(c['product_status_a'],c['product_status_b']) for c in cells} ==
+          {(x,y) for x in statuses for y in statuses}, 'description matrix cells missing/duplicated')
+    for cell in cells:
+        check(cell['pair_count'] == matrix[cell['product_status_a'],cell['product_status_b']], 'source product matrix differs')
+        percent = 100*cell['pair_count']/total if total else None
+        check(cell['percent_of_identical_pairs'] is None if percent is None else
+              math.isclose(cell['percent_of_identical_pairs'], percent, abs_tol=1e-12), 'product-matrix percentage differs')
+    with (folder/'tables/gene_product_status.tsv').open(encoding='utf-8', newline='') as handle:
+        exported = list(csv.DictReader(handle, delimiter='\t'))
+    check(len(exported) == 9, 'product-status TSV cardinality differs')
+    text = (folder/'comparison.txt').read_text(encoding='utf-8')
+    titles = {'missing':'Missing product', 'explicit_hypothetical':'Explicit hypothetical', 'other_product_text':'Other product text'}
+    for saved, cell in zip(exported, cells):
+        check(saved['dataset_a'] == labels[0] and saved['dataset_b'] == labels[1], 'product TSV source direction differs')
+        for key, value in cell.items():
+            check(saved[key] == ('' if value is None else str(value)), 'product TSV/JSON differs: '+key)
+        check(int(saved['identical_protein_pairs']) == total, 'product TSV denominator differs')
+        percentage = cell['percent_of_identical_pairs']
+        percent = ('percentage unavailable' if percentage is None else '<0.1%' if 0 < percentage < 0.1 else f'{percentage:.1f}%')
+        line = f'A {titles[cell["product_status_a"]]} / B {titles[cell["product_status_b"]]}: {cell["pair_count"]:,} / {total:,} ({percent})'
+        check(line in text, 'product text matrix differs')
+    for label, counts in symbols.items():
+        check(f'{label}: gene symbol provided {counts["provided"]:,} / {total:,}; missing {counts["missing"]:,}' in text,
+              'gene-symbol text denominator differs')
+
+
 def check_analysis(folder, models, rows, genome):
     summary = json.loads((folder/'summary.json').read_text())
     nt, aa = fasta(folder/'sequences/cds_nucleotide.fasta'), fasta(folder/'sequences/cds_protein.fasta')

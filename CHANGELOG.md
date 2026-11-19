@@ -6,6 +6,27 @@ and command-line executable retain the lowercase technical name `annostat`.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Prevent redirected terminal summaries from crashing on source labels or paths
+  outside the selected output encoding (for example Greek letters with Windows
+  CP1252). Such characters use backslash escapes; UTF-8 report files retain
+  their original text.
+
+### Added
+
+- Explain product-label differences among accepted CDS pairs with reliable
+  identical predicted proteins. HTML and text summaries separate missing,
+  explicitly hypothetical and other product text, with named denominators,
+  gene-symbol missingness and distinct unresolved-model counts.
+- Link product-status counts to their evidence rows and export the nine-cell
+  matrix in `tables/gene_product_status.tsv`. Relationship exports add
+  `product_status_a/b`; gene JSON schema advances to 1.6. Matching, translation
+  calculations and calculation policy are unchanged. Product labels do not
+  establish function or annotation correctness.
+
 ## [1.2.0] - 2026-11-11
 
 ### Added

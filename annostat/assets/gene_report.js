@@ -80,6 +80,22 @@
             table.search.fixed(id, value ? (search, row) => row[key] === value : null).draw();
         });
     }
+    const productFilter = document.getElementById('gene-product-status');
+    function filterProducts(value) {
+        productFilter.value = value;
+        if (value) {
+            document.getElementById('gene-view').value = 'all';
+            document.getElementById('gene-consequence').value = 'identical';
+            document.getElementById('gene-structure').value = '';
+            table.search('').search.fixed('gene-view', null).search.fixed('gene-structure', null)
+                .search.fixed('gene-consequence', (search, row) => row.protein_consequence === 'identical');
+        }
+        const [a, b] = value.split('|');
+        table.search.fixed('gene-product-status', value ? (search, row) =>
+            row.status === 'matched' && row.protein_consequence === 'identical' &&
+            row.product_status_a === a && row.product_status_b === b : null).draw();
+    }
+    productFilter.addEventListener('change', event => filterProducts(event.target.value));
     function svgNode(tag, attrs, value) {
         const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
         Object.entries(attrs).forEach(([key, val]) => node.setAttribute(key, val));
@@ -348,9 +364,16 @@
         detail.append(el('p', 'These measurements do not identify the correct gene model or demonstrate altered function. Source annotations of partial/pseudogene status are context, not validation.', 'note'));
     }
     document.getElementById('gene-report').addEventListener('click', event => {
+        const product = event.target.closest('button[data-product-a]');
+        if (product) {
+            filterProducts(product.dataset.productA + '|' + product.dataset.productB);
+            document.getElementById('gene-evidence').scrollIntoView({block: 'start'});
+        }
         const category = event.target.closest('button[data-consequence]');
         if (category) {
             const value = category.dataset.consequence;
+            productFilter.value = '';
+            table.search.fixed('gene-product-status', null);
             document.getElementById('gene-consequence').value = value;
             document.getElementById('gene-structure').value = '';
             document.getElementById('gene-view').value = 'all';

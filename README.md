@@ -9,7 +9,8 @@ GFF3** files. Outputs include offline HTML reports, JSON/TSV results, CDS FASTA
 exports and editable SVG plots. Annostat analyzes existing annotations; it does
 not annotate genomes or establish biological correctness.
 
-This README describes **1.2.0**. Check `annostat --version`; package indexes
+This development README builds on **1.2.0**; additions since that release are
+listed under Unreleased in the changelog. Check `annostat --version`; package indexes
 may provide an earlier release. See the changelog for version-specific fixes.
 
 ## Installation
@@ -82,6 +83,11 @@ The gene-level report opens with differences/review findings; All relationships
 retains access to unchanged pairs. Ambiguous links can be inspected together as
 a locus with per-source CDS counts and coordinate tracks. These groups do not
 establish gene split/merge events.
+
+A product-label matrix separates missing descriptions, explicit hypothetical
+labels and other product text among accepted identical-protein pairs. Select a
+count to inspect those pairs. Other product text does not establish a known
+function. The matrix is also available in `tables/gene_product_status.tsv`.
 
 Open `gene-comparison/comparison.html` and inspect a CDS to connect its coordinates,
 translation context and alignment to the classification. `comparison.txt` is the
@@ -175,7 +181,7 @@ to the installed command.
 | `analyze` | `report.html`, `summary.json`, `tables/`, `sequences/`, `plots/` |
 | `validate` | `validation.json` and `validation.tsv` when findings exist |
 | `compare` | `comparison.html`, `comparison.json`, dataset/pairwise TSV tables and SVG plots |
-| `compare --gene-level` | Also `comparison.txt`, `tables/gene_comparisons.tsv`, `tables/gene_context.tsv`, `plots/gene_consequences.svg` |
+| `compare --gene-level` | Also `comparison.txt`, `tables/gene_comparisons.tsv`, `tables/gene_product_status.tsv`, `tables/gene_context.tsv`, `plots/gene_consequences.svg` |
 | `summarize` | `cohort.html`, `cohort.tsv`, `cohort.json` |
 
 Standalone validation writes nothing for clean inputs. Full analysis retains
@@ -191,7 +197,9 @@ regenerate inputs consistently before comparing their metrics.
 
 ## Terminal output and troubleshooting
 
-Progress and diagnostics go to **stderr**, final summaries to **stdout**:
+Progress and diagnostics go to **stderr**, final summaries to **stdout**.
+Terminal output escapes characters its selected encoding cannot represent;
+report files retain UTF-8 text:
 
 ```bash
 annostat analyze -f genome.fna -g annotation.gff3 -o results >summary.txt 2>run.log

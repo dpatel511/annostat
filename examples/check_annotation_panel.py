@@ -23,7 +23,7 @@ from xml.etree import ElementTree as ET
 
 from Bio.Data import CodonTable
 
-from annotation_panel_oracle import check, check_analysis, check_pair, check_figures, fasta, load_models
+from annotation_panel_oracle import check, check_analysis, check_pair, check_figures, check_descriptions, fasta, load_models
 
 
 def digest(path):
@@ -246,6 +246,8 @@ def main():
                 check(forward['cds_counts'] == {left:len(models[left]), right:len(models[right])}, 'gene per-source CDS counts differ')
                 check_pair(forward, models[left], models[right])
                 check_pair(reverse, models[right], models[left])
+                check_descriptions(base/'forward', forward, models[left], models[right])
+                check_descriptions(base/'reverse', reverse, models[right], models[left])
                 groups = check_exports(base/'forward', forward)
                 check_exports(base/'reverse', reverse)
                 backward = {(r['id_b'], r['id_a']): r for r in reverse['relationships']}
@@ -256,6 +258,7 @@ def main():
                         check(other[key] == (-row[key] if row[key] is not None else None), 'swap signed delta differs: '+key)
                 item = dict(a=left, b=right, rows=len(forward['relationships']), accepted=forward['status_counts'].get('matched', 0),
                             consequence_counts=forward['consequence_counts'], ambiguous_groups=groups,
+                            description_summary=forward['description_summary'],
                             report=str((base/'forward/comparison.html').relative_to(output)))
                 case_result['pairs'].append(item)
                 comparisons.append(item)
