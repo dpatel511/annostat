@@ -393,8 +393,7 @@ def _render_report(summary: dict[str, object], plot_paths: list[Path]) -> str:
         "A normalized comparison of annotated bacterial assemblies. Dataset labels do not imply strain-level relatedness."
     )
     if gene_result is not None:
-        consequence_plot = next(path for path in plot_paths if path.name == "gene_consequences.svg")
-        gene_panel = render_gene_report(summary, consequence_plot)
+        gene_panel = render_gene_report(summary)
     species_count = len(summary["species"])
     scope_label = {
         "mixed_species": f"{species_count} identified species",
@@ -447,7 +446,9 @@ def _render_report(summary: dict[str, object], plot_paths: list[Path]) -> str:
     tags = f'<span class="tag">{len(profiles)} {dataset_noun}</span><span class="tag">{escape(scope_label)}</span>'
     if gene_result is not None:
         heading = f'<p class="gene-kicker">CDS annotation comparison</p><h1>{escape(str(profiles[0]["label"]))}<span class="gene-versus"> vs </span>{escape(str(profiles[1]["label"]))}</h1>'
-        tags = '<span class="tag">2 annotations</span><span class="tag">Identical FASTA sequences</span><span class="tag">Genomic coordinates: 1-based inclusive</span>'
+        tables = sorted({str(profile["genetic_code"]) for profile in profiles})
+        tags = (f'<p class="gene-meta">Identical assembly: {profiles[0]["sequence_count"]:,} sequences, {profiles[0]["genome_length"]:,} bp'
+                f' · NCBI translation table {", ".join(tables)} · coordinates 1-based inclusive · Annostat {escape(str(summary["annostat_version"]))}</p>')
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Annostat comparison report</title><style>
@@ -462,11 +463,11 @@ table{{border-collapse:collapse;width:100%;white-space:nowrap}}th{{color:var(--m
 details summary{{cursor:pointer;font-weight:700}}details .table-wrap{{margin-top:14px}}.downloads{{display:flex;gap:18px;flex-wrap:wrap}}a{{color:var(--green);font-weight:600}}footer{{border-top:1px solid var(--line);color:var(--muted);font-size:12px;margin-top:28px;padding-top:16px}}
 @media(max-width:700px){{header span{{display:block;float:none;margin-top:3px}}main{{padding:26px 14px 48px}}h1{{font-size:28px}}.panel,.figure,details,.notice{{padding:14px}}}}@media print{{body{{background:#fff}}main{{max-width:none;padding:12px}}.panel,.figure,details,.notice{{break-inside:avoid}}}}
 </style></head><body{' class="gene-comparison"' if gene_result is not None else ''}><header><strong>Annostat comparison</strong><span>version {escape(str(summary["annostat_version"]))}</span></header><main>
-{heading}<p class="subtitle">{subtitle}</p>
-<div class="tags">{tags}</div>
-{warning_panel}
+{heading}{'' if gene_result is not None else f'<p class="subtitle">{subtitle}</p>'}
+{tags if gene_result is not None else f'<div class="tags">{tags}</div>'}
+{warning_panel if gene_result is None else ''}
 {gene_panel}
-{'<details><summary>Aggregate annotation profiles (secondary)</summary>' if gene_result is not None else ''}
+{'<details id="report-aggregate"><summary>Aggregate annotation profiles (secondary)</summary>' + warning_panel if gene_result is not None else ''}
 <section class="panel"><h2>{dataset_heading}</h2><div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Organism</th><th>Input source</th><th>Genetic code</th><th>Genome</th><th>CDS</th><th>GC</th><th>Coding</th><th>COG coverage</th></tr></thead><tbody>{overview_rows}</tbody></table></div></section>
 {figure_sections}
 <section class="panel"><h2>Pairwise comparison</h2><div class="table-wrap"><table><thead><tr><th>Pair</th><th>Taxonomic scope</th><th>Gene labels</th><th>COG IDs</th><th>COG profile distance</th><th>Start profile distance</th></tr></thead><tbody>{pair_rows}</tbody></table></div>

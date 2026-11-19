@@ -33,6 +33,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   table counts when several tables are used. Analysis schema 1.3, comparison
   schema 1.2, validation ruleset 2026.11.1, calculation policy
   `annotation-metrics-1.5`.
+- Redesigned gene-level comparison report as a concise scientific report: a
+  one-sentence result, four summary statistics, a figure assigning every CDS
+  model to one outcome, short key findings linked to their evidence rows,
+  numbered tables and figures (including a B−A protein-length histogram and a
+  shaded product-label matrix) and a compact Methods section. Repeated caveats
+  were consolidated into Methods. Measurements, exports and the evidence table
+  are unchanged; a filter for any interpretable protein difference is added.
 - `examples/check_fungal_comparison.py`, an independent checker for spliced
   gene/mRNA/CDS analyses and gene-level comparisons.
 - Support NCBI translation table 1 (standard code; TTG/CTG/ATG initiators) in

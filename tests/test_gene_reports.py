@@ -49,6 +49,14 @@ class GeneReportTests(unittest.TestCase):
         self.assertIn("DataTables 3.1.4", html)
         self.assertIn("comparison.txt", html)
         self.assertIn("1-based inclusive", html)
+        # Overview partition: every CDS model is counted exactly once in its own source.
+        from annostat.gene_report import model_partition
+        for label, counts, total in model_partition(gene):
+            self.assertEqual(sum(counts.values()), total, label)
+            self.assertEqual(counts["unmatched"], gene["unmatched_cds_counts"][label])
+            self.assertEqual(counts["identical"], gene["consequence_counts"].get("identical", 0))
+        self.assertIn("<b>Figure 1.</b> Outcome of every CDS model", html)
+        self.assertIn('data-filter-structure="unmatched"', html)
         with (output / "tables/gene_comparisons.tsv").open(newline="", encoding="utf-8") as handle:
             tsv = next(r for r in csv.DictReader(handle, delimiter="\t") if r["id_a"] == "gyrB_A")
         self.assertEqual(tsv["n_terminal_residues_a"], row["n_terminal_residues_a"])
@@ -67,7 +75,8 @@ class GeneReportTests(unittest.TestCase):
             self.assertIn(caption, text)
         # Displayed percentages use accepted pairs, not all relationship rows.
         self.assertIn('110 of 113 accepted pairs (97.3%)', html)
-        self.assertIn('2 of 113 accepted pairs (1.8%)', html)
+        self.assertIn('Terminal-only difference: 1 of 113 accepted pairs (0.9%)', html)
+        self.assertIn('Initiation-context difference: 1 of 113 accepted pairs (0.9%)', html)
         self.assertIn('1 of 113 accepted pairs (0.9%)', html)
         self.assertIn('113 / 114 CDS models (99.1%)', html)
         self.assertIn('Exact CDS structure', html)
