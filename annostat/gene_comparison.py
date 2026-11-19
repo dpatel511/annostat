@@ -26,7 +26,62 @@ GENE_COMPARISON_COLUMNS = (
     *(f"{name}_{suffix}" for suffix in ("a", "b") for name in
       ("first_codon_positions", "first_amino_acid", "start_context")),
     "unapplied_transl_except_a", "unapplied_transl_except_b",
+    "product_status_a", "product_status_b",
 )
+
+
+PRODUCT_STATUS_LABELS = {
+    "missing": "Missing product",
+    "explicit_hypothetical": "Explicit hypothetical",
+    "other_product_text": "Other product text",
+}
+
+
+def product_status(product: str | None) -> str:
+    """Classify source text, not the certainty of a biological function."""
+    if not product or not product.strip():
+        return "missing"
+    return "explicit_hypothetical" if "hypothetical protein" in product.lower() else "other_product_text"
+
+
+def description_summary(rows: list[dict], labels: tuple[str, str]) -> dict:
+    """Compare descriptions only within reliable identical-protein pairs."""
+    accepted = [row for row in rows if row["status"] == "matched"]
+    identical = [row for row in accepted if row["protein_consequence"] == "identical"]
+    counts = Counter(row["protein_consequence"] for row in accepted)
+    matrix = Counter((row["product_status_a"], row["product_status_b"]) for row in identical)
+    total = len(identical)
+    return {
+        "accepted_pairs": len(accepted),
+        "identical_protein_pairs": total,
+        "interpretable_protein_difference_pairs": sum(counts[key] for key in
+                                                     ("terminal_only", "initiator_recoding", "translation_difference")),
+        "limited_protein_pairs": counts["limited"],
+        "unresolved_cds_counts": {
+            label: len({(row["seqid"], row["strand"], row[f"id_{side}"]) for row in rows
+                        if row["status"] != "matched" and row[f"id_{side}"] is not None})
+            for label, side in zip(labels, ("a", "b"))
+        },
+        "product_status_matrix": [
+            {"product_status_a": a, "product_status_b": b, "pair_count": matrix[a, b],
+             "percent_of_identical_pairs": 100 * matrix[a, b] / total if total else None}
+            for a in PRODUCT_STATUS_LABELS for b in PRODUCT_STATUS_LABELS
+        ],
+        "product_text_difference_pairs": sum((row["product_a"] or "") != (row["product_b"] or "") for row in identical),
+        "gene_symbol_counts": {
+            label: {"provided": sum(bool(row[f"gene_{side}"]) for row in identical),
+                    "missing": sum(not row[f"gene_{side}"] for row in identical)}
+            for label, side in zip(labels, ("a", "b"))
+        },
+        "methods": 'Product and gene-symbol summaries use accepted pairs with protein_consequence=identical; '
+                   'different proteins, limited evidence and unresolved correspondence are excluded. '
+                   'Missing/blank product fields are missing; explicit hypothetical means the case-insensitive '
+                   'substring "hypothetical protein"; every other nonempty description is other product text. '
+                   'Exported descriptions have normalized whitespace and are compared case-sensitively, '
+                   'with missing and blank treated alike. Other product text does not establish a known or '
+                   'experimentally characterized function. Gene symbols are source labels, not orthology. '
+                   'Unresolved counts use distinct CDS models per source, not relationship rows.',
+    }
 
 
 def genome_fingerprint(genome: Mapping[str, str]) -> str:
@@ -235,6 +290,7 @@ def _row(left: CdsModel | None, right: CdsModel | None, labels: tuple[str, str],
             f"unapplied_transl_except_{suffix}": "; ".join(item.unapplied_translation_exceptions) if item else None,
             **{f"{name.lower()}_{suffix}": _attribute(item, name) if item else None for name in _ATTRIBUTES},
         })
+        row[f"product_status_{suffix}"] = product_status(row[f"product_{suffix}"]) if item else None
     overlap = None
     start_delta = stop_delta = None
     changed = None
@@ -336,7 +392,7 @@ def compare_cds(left: Iterable[CdsModel], right: Iterable[CdsModel], labels: tup
             rows.append(_row(None, b[j], labels, "unmatched"))
     rows.sort(key=lambda row: (row["seqid"], row["strand"], row["id_a"] or "", row["id_b"] or "", row["status"]))
     return {
-        "schema_version": "1.4", "coordinate_system": "1-based inclusive",
+        "schema_version": "1.6", "coordinate_system": "1-based inclusive",
         "scope": "CDS models only; RNA and gene-only pseudogene records are not matched. Unmatched CDS calls do not establish biological absence.",
         "cds_counts": {labels[0]: len(a), labels[1]: len(b)},
         "exact_model_count": exact_count,
@@ -346,5 +402,6 @@ def compare_cds(left: Iterable[CdsModel], right: Iterable[CdsModel], labels: tup
         "consequence_counts": dict(sorted(Counter(row["protein_consequence"] for row in rows if row["status"] == "matched").items())),
         "unmatched_cds_counts": {label: sum(row["status"] == "unmatched" and row[f"id_{suffix}"] is not None for row in rows) for label, suffix in zip(labels, ("a", "b"))},
         "consequence_methods": "Accepted pairs use ordered genomic codon coordinates, not score-optimized protein alignment. Protein-length and terminal deltas are B minus A. Identity includes gap columns. Initiation-specific mismatches are separated from other non-gap mismatches; neither represents a DNA mutation on these identical assemblies. Unknown/stop residues and unresolved codon mapping are marked limited. Source partial/pseudogene/exception context is not experimental validation.",
+        "description_summary": description_summary(rows, labels),
         "relationships": rows,
     }

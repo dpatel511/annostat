@@ -572,7 +572,6 @@ def run_comparison(
     }
     if gene_level:
         gene = compare_cds(models[0], models[1], (labels[0], labels[1]))
-        gene["schema_version"] = "1.5"
         gene["source_context"] = collect_source_context(gene, models, context_features, (labels[0], labels[1]))
         summary["gene_level_comparison"] = gene
 
@@ -584,12 +583,20 @@ def run_comparison(
     _write_rows(tables_dir / "pairwise_comparisons.tsv", pairwise)
     gene_table = tables_dir / "gene_comparisons.tsv"
     context_table = tables_dir / "gene_context.tsv"
+    product_table = tables_dir / "gene_product_status.tsv"
     if gene_level:
         _write_rows(gene_table, summary["gene_level_comparison"]["relationships"], GENE_COMPARISON_COLUMNS)
         _write_rows(context_table, gene["source_context"]["observations"], CONTEXT_COLUMNS)
+        descriptions = gene["description_summary"]
+        _write_rows(product_table, [
+            dict(dataset_a=labels[0], dataset_b=labels[1], **cell,
+                 identical_protein_pairs=descriptions["identical_protein_pairs"])
+            for cell in descriptions["product_status_matrix"]
+        ])
     else:
         gene_table.unlink(missing_ok=True)
         context_table.unlink(missing_ok=True)
+        product_table.unlink(missing_ok=True)
     overview_plot = plots_dir / "dataset_overview.svg"
     cog_plot = plots_dir / "cog_comparison.svg"
     write_comparison_overview(overview_plot, profiles)

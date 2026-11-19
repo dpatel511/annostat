@@ -89,3 +89,59 @@ source protein records; 641 pseudogene models used computed-only references.
 All real-data inputs use table 11; other genetic codes and fragmented draft
 assemblies are outside this panel. Detailed evidence stays in the chosen output
 directory rather than being distributed with the package.
+
+## Description-summary audit
+
+The panel oracle also checks source-derived product-status assignments,
+identical-protein eligibility, all nine matrix cells, gene-symbol missingness,
+distinct unresolved models, TSV fields and text denominators. This uses
+independently parsed source attributes and source protein/codon correspondence,
+rather than importing Annostat's summary calculations.
+
+Run the small constructed cases without downloading public inputs:
+
+```bash
+python examples/check_description_summary.py --output tmp/description-cases
+node examples/check_annotation_panel_browser.cjs tmp/description-cases
+```
+
+The 29 examples run in both directions and cover both strands, nonzero initial
+phases, multipart/circular CDSs, tables 4/11/25, partial starts, supported and
+unapplied translation exceptions, unknown/internal-stop residues, changed
+boundaries, inherited metadata, missing/uncertain labels, escaped Unicode/HTML,
+duplicate structures, ambiguous overlaps, frame candidates and empty sources.
+Their expected outcomes are declared fixtures, not inferred from the production
+description-summary helper. The browser step uses the optional setup above.
+
+Use fresh output directories after a schema/feature change. `--check-only`
+checks existing outputs against the current contract; it does not upgrade old
+reports.
+
+On 2026-11-13 the extended local audit checked the same frozen five-assembly
+panel: **99 real-data CLI commands**, **19 analyses**, **27 pairs in both
+directions**, **76,407 published source proteins** and **641 computed-only
+pseudogene models**. The 29 constructed examples also passed on WSL and native
+Windows in both directions. Four public-input filtering/profiling controls
+verified selected IDs/sequences and unchanged full-analysis metrics, including
+an empty COG-required export from a source without category fields.
+
+All **171 unit/subprocess tests** passed on Python 3.10.22 (Biopython 1.88,
+Matplotlib 3.10.9) and Windows Python 3.12.14 (Biopython 1.88, Matplotlib 3.11.2,
+UTF-8 mode disabled, CP1252 locale). The audit reproduced and fixed a terminal
+summary crash on nonrepresentable labels/paths. Its regression and installed-wheel
+checks force strict CP1252 output while verifying original Unicode in UTF-8
+reports. Nine deliberately corrupted result/export controls were rejected,
+and ten invalid-input/validation-exit-policy checks passed.
+
+Offline rendered checks passed for **199 HTML reports at two widths and 399
+standalone SVGs**: 797 browser/figure cases across real, synthetic, Windows and
+filtered outputs. Representative desktop/mobile screenshots were inspected.
+Detailed locus/source tables may scroll horizontally on narrow screens;
+no page-level overflow or exported SVG text clipping was detected.
+
+The final wheel was checked outside the checkout on Python 3.10 and native
+Windows; all 26 runtime files matched the wheel and checkout. No annotation
+database or new genome data was downloaded. These are computational/source
+consistency checks, not experimental biological validation or a ranking of
+current annotation-tool releases. Exact logs, source hashes, original failure
+and final wheel checks remain under the ignored audit directory.

@@ -366,6 +366,9 @@ def _print_summary(summary: dict[str, object], output_dir: Path, elapsed: float)
 def main(arguments: list[str] | None = None) -> int:
     """Parse arguments, run the analysis, and report its output location."""
 
+    # Keep the selected encoding, but do not crash on nonrepresentable labels/paths.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="backslashreplace")
     command_arguments = list(sys.argv[1:] if arguments is None else arguments)
     if not command_arguments or command_arguments == ["--help"] or command_arguments == ["-h"]:
         build_root_parser().print_help()

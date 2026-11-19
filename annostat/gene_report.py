@@ -8,6 +8,7 @@ from importlib.resources import files
 from pathlib import Path
 from statistics import median
 
+from annostat.gene_comparison import PRODUCT_STATUS_LABELS
 from annostat.locus_context import CONTEXT_LABELS
 
 
@@ -84,6 +85,67 @@ def review_loci(rows: list[dict]) -> list[dict]:
     return groups
 
 
+def _description_percent(value: float | None) -> str:
+    if value is None:
+        return "Not available"
+    return "<0.1%" if 0 < value < 0.1 else f"{value:.1f}%"
+
+
+def _description_panel(gene: dict) -> str:
+    description = gene["description_summary"]
+    total = description["identical_protein_pairs"]
+    labels = list(gene["cds_counts"])
+    intro = (f"{total:,} accepted pairs with reliable identical predicted proteins."
+             if total else "No accepted pairs with reliable identical predicted proteins; percentages unavailable.")
+    matrix = {(cell["product_status_a"], cell["product_status_b"]): cell
+              for cell in description["product_status_matrix"]}
+    rows = ""
+    for a, title in PRODUCT_STATUS_LABELS.items():
+        cells = ""
+        for b in PRODUCT_STATUS_LABELS:
+            cell = matrix[a, b]
+            percentage = cell["percent_of_identical_pairs"]
+            percent = escape(_description_percent(percentage))
+            cells += (f'<td><button type="button" data-product-a="{a}" data-product-b="{b}" '
+                      f'aria-label="A {title}; B {PRODUCT_STATUS_LABELS[b]}: {cell["pair_count"]:,} pairs" '
+                      f'aria-controls="gene-table" {"disabled" if not cell["pair_count"] else ""}>'
+                      f'<strong>{cell["pair_count"]:,}</strong><small>{percent}</small></button></td>')
+        rows += f'<tr><th scope="row">{title}</th>{cells}</tr>'
+    symbol_counts = "; ".join(
+        f'{escape(label)}: provided {counts["provided"]:,} / {total:,}, missing {counts["missing"]:,}'
+        for label, counts in description["gene_symbol_counts"].items())
+    unresolved = "; ".join(f"{escape(label)}: {count:,}" for label, count in description["unresolved_cds_counts"].items())
+    return f'''<section id="gene-descriptions" class="gene-descriptions">
+<h2>Product labels on identical predicted proteins</h2><p>{intro}</p>
+<p>{description["product_text_difference_pairs"]:,} of {total:,} identical-protein pairs have different product text (normalized whitespace; missing and blank treated alike).</p>
+<div class="table-wrap"><table class="gene-product-matrix">
+<caption>A: {escape(labels[0])} (rows) · B: {escape(labels[1])} (columns). Each percentage uses all {total:,} identical-protein pairs. Select a count to inspect its pairs.</caption>
+<thead><tr><th scope="col">A / B</th>{''.join(f'<th scope="col">{title}</th>' for title in PRODUCT_STATUS_LABELS.values())}</tr></thead><tbody>{rows}</tbody></table></div>
+<p class="note">Missing product means absent/blank. Explicit hypothetical means a case-insensitive “hypothetical protein” substring. Other product text does not establish a known or experimentally characterized function; DUF/UPF and other uncertain descriptions remain in that category.</p>
+<p class="note">Gene symbols among these same {total:,} pairs: {symbol_counts}. Symbols are source labels, not orthology.</p>
+<p class="note">Excluded from the matrix: {description["interpretable_protein_difference_pairs"]:,} interpretable protein-difference pairs and {description["limited_protein_pairs"]:,} limited-evidence pairs. Unresolved CDS models (distinct): {unresolved}.</p>
+<a href="tables/gene_product_status.tsv">Download product-status counts (TSV)</a></section>'''
+
+
+def _description_text(gene: dict) -> list[str]:
+    description = gene["description_summary"]
+    total = description["identical_protein_pairs"]
+    lines = [f"Product-label comparison: {total:,} accepted pairs with reliable identical predicted proteins.",
+             f'{description["product_text_difference_pairs"]:,} of {total:,} identical-protein pairs have different product text (normalized whitespace; missing and blank treated alike).']
+    for cell in description["product_status_matrix"]:
+        percentage = cell["percent_of_identical_pairs"]
+        percent = _description_percent(percentage) if percentage is not None else "percentage unavailable"
+        lines.append(f'A {PRODUCT_STATUS_LABELS[cell["product_status_a"]]} / B {PRODUCT_STATUS_LABELS[cell["product_status_b"]]}: '
+                     f'{cell["pair_count"]:,} / {total:,} ({percent})')
+    lines.append(f"Gene symbols among these same {total:,} pairs:")
+    lines += [f'{label}: gene symbol provided {counts["provided"]:,} / {total:,}; missing {counts["missing"]:,}'
+              for label, counts in description["gene_symbol_counts"].items()]
+    lines.append("Unresolved CDS models (distinct): " + "; ".join(
+        f"{label}: {count:,}" for label, count in description["unresolved_cds_counts"].items()))
+    lines += [description["methods"], "Product-status counts: tables/gene_product_status.tsv"]
+    return lines
+
+
 def render_gene_report(summary: dict, plot: Path) -> str:
     """Present scientific findings before the complete, offline evidence browser."""
     gene = summary["gene_level_comparison"]
@@ -156,6 +218,10 @@ def render_gene_report(summary: dict, plot: Path) -> str:
                            '<a href="tables/gene_context.tsv">Download source observations (TSV)</a>.</p>'
                            '<p class="note">Inspect an unresolved locus for source RNA/pseudogene records, '
                            'opposite-strand CDS overlaps and sequence-edge context. Observations do not explain causation.</p>')
+    description = gene["description_summary"]
+    description_overview = (f'<p>{description["product_text_difference_pairs"]:,} of {identical:,} identical-protein pairs have different product text. '
+                            '<a href="#gene-descriptions">Inspect description differences</a>.</p>'
+                            if description["product_text_difference_pairs"] else "")
     # HTML parsers recognize </script> even inside a JSON string. Escape markup
     # before embedding; the client always renders source attributes as text.
     payload = json.dumps(gene, ensure_ascii=True).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
@@ -165,14 +231,14 @@ def render_gene_report(summary: dict, plot: Path) -> str:
     scripts = "\n".join(assets.joinpath(name).read_text(encoding="utf-8") for name in ("datatables-3.1.4.min.js", "gene_report.js"))
     license_text = escape(assets.joinpath("datatables-LICENSE.txt").read_text(encoding="utf-8"))
     return f'''<style>{css}</style><section class="gene-report" id="gene-report">
-<nav class="gene-nav" aria-label="Report sections"><a href="#gene-overview">Overview</a><a href="#gene-differences">Differences</a><a href="#gene-evidence">Gene evidence</a><a href="#gene-methods">Methods</a><a href="#report-data">Download data</a></nav>
+<nav class="gene-nav" aria-label="Report sections"><a href="#gene-overview">Overview</a><a href="#gene-differences">Differences</a><a href="#gene-descriptions">Product labels</a><a href="#gene-evidence">Gene evidence</a><a href="#gene-methods">Methods</a><a href="#report-data">Download data</a></nav>
 <section class="gene-section" id="gene-overview"><div class="gene-section-heading"><span>01 / Overview</span><p>Two annotations · identical genome sequences</p></div>
 <div class="gene-finding"><span class="gene-eyebrow">Main finding</span><h2>{headline}</h2>
 <p><strong>{matched:,} accepted one-to-one CDS pairs.</strong> Protein comparisons: {identical:,} identical, {changed:,} interpretable differences, {limited:,} limited.</p>
-<p class="note">Experimental support is not assessed. These findings describe annotation differences and do not identify the biologically correct model.</p></div>
+<p class="note">Experimental support is not assessed. These findings describe annotation differences and do not identify the biologically correct model.</p>{description_overview}</div>
 <div class="gene-counts">{cards}</div>
 <div class="gene-sources">{sources}</div></section>
-<section class="gene-section" id="gene-differences"><div class="gene-section-heading"><span>02 / Difference profile</span><p>Counts and percentages use accepted pairs</p></div>
+<section class="gene-section" id="gene-differences"><div class="gene-section-heading"><span>02 / Difference profile</span><p>Protein/structure: accepted pairs · Product labels: identical proteins</p></div>
 <div class="gene-profile-grid"><div><h2>Translated protein differences</h2><p class="note">Denominator: {matched:,} accepted pairs. Limited evidence is retained in this denominator.</p>
 <div class="table-wrap"><table class="gene-outcomes"><thead><tr><th>Finding and interpretation</th><th>Pairs / %</th><th>Evidence</th></tr></thead><tbody>{outcomes}</tbody></table></div></div>
 <div><h2>CDS structure</h2><p class="note">Structural correspondence is assessed separately from protein equality.</p>
@@ -184,10 +250,12 @@ def render_gene_report(summary: dict, plot: Path) -> str:
 <p><strong>{sum(locus["kind"] == "ambiguous" for locus in loci):,} ambiguous overlap groups.</strong> Each group collects links sharing a CDS; groups are not inferred genes.</p>
 <p class="note">Relationship rows are not distinct genes. Unmatched calls do not establish biological absence; unresolved overlaps do not establish split/merge events.</p>{context_summary}
 <button type="button" data-consequence="unresolved" aria-controls="gene-table" {'disabled' if not unresolved else ''}>Review unresolved rows</button></aside></div></div>
+{_description_panel(gene)}
 <details class="gene-figure"><summary>Editable figure: protein consequence counts</summary>{plot.read_text(encoding="utf-8")}<a href="plots/gene_consequences.svg">Download SVG</a></details></section>
 <section class="gene-section" id="gene-evidence"><div class="gene-section-heading"><span>03 / Gene evidence</span><p>Every relationship is available</p></div>
 <h2>Inspect individual CDS models</h2><p class="note">Search a gene, CDS ID, product or source attribute. Select <strong>Inspect</strong> to connect the classification to its coordinates and translated residues. All {len(gene["relationships"]):,} relationship rows are retained.</p>
 <div class="gene-controls"><label>View <select id="gene-view"><option value="review">Differences / needs review</option><option value="all">All relationships</option></select></label><label>Protein evidence <select id="gene-consequence"><option value="">All relationships</option>{''.join(f'<option value="{key}">{label}</option>' for key, label in CONSEQUENCE_LABELS.items())}<option value="unresolved">Unresolved correspondence</option></select></label>
+<label>Product labels · identical proteins <select id="gene-product-status"><option value="">All label combinations</option>{''.join(f'<option value="{a}|{b}">A {title_a} / B {title_b}</option>' for a, title_a in PRODUCT_STATUS_LABELS.items() for b, title_b in PRODUCT_STATUS_LABELS.items())}</select></label>
 <label>Structure <select id="gene-structure"><option value="">All structures</option>{''.join(f'<option value="{key}">{RELATIONSHIP_LABELS[key]}</option>' for key in ("exact", "start_shift", "stop_shift", "frame_disagreement", "overlap", "unmatched"))}</select></label></div>
 <p class="note" id="gene-view-summary" role="status" aria-live="polite">Differences / needs review is the default. Gene/product label changes are included; source database-reference differences alone do not hide otherwise unchanged pairs from the full export.</p>
 <noscript><p>JavaScript is required for the interactive table. The complete <a href="tables/gene_comparisons.tsv">TSV</a>, <a href="comparison.json">JSON</a>, and <a href="comparison.txt">text summary</a> remain available.</p></noscript>
@@ -195,9 +263,10 @@ def render_gene_report(summary: dict, plot: Path) -> str:
 <section id="gene-detail" class="gene-detail" aria-live="polite"><h3>Gene evidence</h3><p>Select a relationship to inspect its two annotation models.</p></section>
 </section><section class="gene-section" id="gene-methods"><div class="gene-section-heading"><span>04 / Methods and interpretation</span><p>Descriptive measurements; no significance tests</p></div>
 <h2>Read the measurements correctly</h2><p>Genomic coordinates are <strong>1-based inclusive</strong>. Segments remain in biological order; arrows show strand. Positive boundary deltas point downstream in the CDS strand direction. Protein length and terminal deltas are <strong>B minus A</strong>, in amino acids (aa).</p>
+<p>{escape(gene["description_summary"]["methods"])}</p>
 <p>{escape(gene["consequence_methods"])}</p><p>Non-gap mismatches are measured at corresponding genomic codons, with initiation-context mismatches reported separately from other mismatches. They are not DNA mutations. Gap aa counts codons present in only one translated model. Identity includes gap columns. Unavailable measurements are not zero.</p>
-<p>{escape(gene["scope"])} These are descriptive annotation differences, not tests of significance, functional-impact predictions, or evidence that either annotation is correct. Percentages in the difference profile use all accepted pairs; they do not estimate annotation accuracy.</p>{context_methods}
-<p class="downloads"><a href="comparison.txt">Interpretation summary (TXT)</a><a href="tables/gene_comparisons.tsv">All relationships and evidence (TSV)</a><a href="plots/gene_consequences.svg">Consequence counts (SVG)</a></p>
+<p>{escape(gene["scope"])} These are descriptive annotation differences, not tests of significance, functional-impact predictions, or evidence that either annotation is correct. Protein/structure percentages use all accepted pairs; product-label percentages use only reliable identical-protein pairs. Neither estimates annotation accuracy.</p>{context_methods}
+<p class="downloads"><a href="comparison.txt">Interpretation summary (TXT)</a><a href="tables/gene_comparisons.tsv">All relationships and evidence (TSV)</a><a href="tables/gene_product_status.tsv">Product-status counts (TSV)</a><a href="plots/gene_consequences.svg">Consequence counts (SVG)</a></p>
 <details><summary>Bundled table-library license</summary><p>DataTables 3.1.4, locally bundled; no network access.</p><pre class="gene-license">{license_text}</pre></details>
 </section></section><script id="gene-data" type="application/json">{payload}</script><script id="gene-loci" type="application/json">{locus_payload}</script><script>{scripts}</script>'''
 
@@ -219,6 +288,7 @@ def gene_text_report(summary: dict) -> str:
               "Unmatched CDS calls: " + "; ".join(f"{label}: {count:,}" for label, count in gene["unmatched_cds_counts"].items()),
               f"Candidate relationship rows: {gene['status_counts'].get('candidate', 0):,}; ambiguous relationship rows: {gene['status_counts'].get('ambiguous', 0):,}.",
               "Relationship rows are not distinct genes. Unresolved pairs have no assigned protein consequence.", "",
+              *_description_text(gene), "",
               "Review shortlist (up to 3 examples per group; all rows remain in TSV/JSON):",
               "Within each group, measured absolute protein-length differences are largest first; unavailable lengths follow. This is not a functional-impact ranking."]
     ambiguous = [locus for locus in loci if locus["kind"] == "ambiguous"]
@@ -280,5 +350,5 @@ def gene_text_report(summary: dict) -> str:
                     lines.append(f"  {end.upper()} terminus B-A {row[f'{end}_terminal_delta_aa']:+d} aa; extra sequence in {'A' if row[f'{end}_terminal_residues_a'] else 'B'}: {residues[:60]}{'... (full sequence in TSV/JSON)' if len(residues) > 60 else ''}.")
     lines += ["", "Interpretation: differences do not establish functional effects or annotation correctness. Unmatched calls do not establish biological absence. Experimental support is not assessed by this report.",
               gene["consequence_methods"],
-              "Full evidence: comparison.json; tables/gene_comparisons.tsv; tables/gene_context.tsv; interactive comparison.html; plots/gene_consequences.svg.", ""]
+              "Full evidence: comparison.json; tables/gene_comparisons.tsv; tables/gene_product_status.tsv; tables/gene_context.tsv; interactive comparison.html; plots/gene_consequences.svg.", ""]
     return "\n".join(lines)

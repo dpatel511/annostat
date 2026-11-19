@@ -75,6 +75,36 @@ async function unclipped(page, selector) {
             assert.equal((await info()).recordsDisplay, gene.relationships.filter(r => r.protein_consequence === category).length, 'consequence filter');
           }
           await page.locator('#gene-consequence').selectOption('');
+          if (gene.description_summary) {
+            const descriptions = gene.description_summary;
+            assert.equal(await page.locator('.gene-product-matrix tbody tr').count(), 3);
+            for (const cell of descriptions.product_status_matrix) {
+              const button = page.locator(`button[data-product-a="${cell.product_status_a}"][data-product-b="${cell.product_status_b}"]`);
+              assert.equal(await button.locator('strong').innerText(), cell.pair_count.toLocaleString('en-US'));
+              assert.equal(await button.isDisabled(), cell.pair_count === 0);
+              const percent = cell.percent_of_identical_pairs;
+              const displayed = await button.locator('small').innerText();
+              if (percent === null) assert.equal(displayed, 'Not available');
+              else if (cell.pair_count && percent < 0.1) assert.equal(displayed, '<0.1%');
+              else assert.equal(displayed, percent.toFixed(1) + '%');
+              if (!cell.pair_count) continue;
+              // Matrix selection must clear stale structure/search/review filters.
+              await page.locator('#gene-structure').selectOption('unmatched');
+              await page.locator('#gene-evidence input[type=search]').fill('no-such-CDS');
+              await button.click();
+              assert.equal((await info()).recordsDisplay, cell.pair_count, 'product-matrix evidence count');
+              assert.equal(await page.locator('#gene-product-status').inputValue(), cell.product_status_a + '|' + cell.product_status_b);
+            }
+            // Protein-category buttons must clear the matrix filter.
+            const category = Object.keys(gene.consequence_counts)[0];
+            if (category) {
+              await page.locator(`button[data-consequence="${category}"]`).click();
+              assert.equal(await page.locator('#gene-product-status').inputValue(), '');
+              assert.equal((await info()).recordsDisplay, gene.consequence_counts[category]);
+            }
+            await page.locator('#gene-product-status').selectOption('');
+            await page.locator('#gene-consequence').selectOption('');
+          }
           // Inspect one representative of every available relationship/evidence type.
           const selected = new Map();
           gene.relationships.forEach(r => {const k = r.status+'/'+r.relationship+'/'+r.protein_consequence; if (!selected.has(k)) selected.set(k,r);});
