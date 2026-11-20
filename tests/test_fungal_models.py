@@ -187,5 +187,47 @@ class FungalModelTests(unittest.TestCase):
         self.assertEqual(gene["status_counts"]["matched"], 4)
 
 
+class FungalReportTests(unittest.TestCase):
+    """funannotate conventions: symbols on gene Name, COG categories in mRNA note."""
+
+    def test_analysis_reads_funannotate_labels_and_skips_bacterial_rrna_expectations(self):
+        from annostat.workflow import run_analysis
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            panel = build_panel()
+            dataset = panel.write(root, "A")
+            text = dataset.gff.read_text(encoding="utf-8")
+            text = text.replace("\tgene\t101\t402\t.\t+\t.\tID=MUM_000001;", "\tgene\t101\t402\t.\t+\t.\tID=MUM_000001;Name=GLT1_1;")
+            text = text.replace("ID=MUM_000002;", "ID=MUM_000002;Name=MUM_000002;")  # Name equal to ID is not a symbol
+            text = text.replace("ID=MUM_000004-T1;Parent=MUM_000004;product=kinase;",
+                                "ID=MUM_000004-T1;Parent=MUM_000004;product=kinase;note=EggNog:ENOG50,COG:S;")
+            dataset.gff.write_text(text, encoding="utf-8")
+            summary = run_analysis(dataset.fasta, dataset.gff, root / "out", "csv", genetic_code=1)
+            report = (root / "out" / "report.html").read_text(encoding="utf-8")
+        self.assertEqual(summary["cds_with_gene_count"], 2)  # both MUM_000001 isoforms
+        self.assertEqual(summary["cds_with_cog_count"], 1)
+        self.assertEqual(summary["cog_category_counts"], {"S": 1})
+        self.assertEqual(summary["rna_counts"], {})  # mRNAs are not counted as RNA features
+        self.assertNotIn("missing_rrna_type", summary["quality_control"]["issue_counts"])
+        self.assertIn("Genome annotation report", report)
+        self.assertNotIn("Bacterial annotation report", report)
+
+    def test_yeast_style_trna_names_count_as_observed_amino_acids(self):
+        from annostat.models import Feature
+        from annostat.qc import _structural_rna_findings
+        trnas = [Feature("chr", "t", "tRNA", 1, 72, None, "+", None, {"ID": f"rna{i}", "gene": name})
+                 for i, name in enumerate(("tD(GUC)1", "tS(UGA)3"))]
+        missing = {finding.details for finding in _structural_rna_findings(trnas, bacterial_rrna=False)}
+        self.assertEqual(len(missing), 18)
+        self.assertNotIn("no tRNA annotation found for Asp", missing)
+        self.assertNotIn("no tRNA annotation found for Ser", missing)
+
+    def test_gene_name_fallback_ignores_identifiers_and_cds_names(self):
+        from annostat.models import Feature
+        gene = Feature("chr", "t", "gene", 1, 9, None, "+", None, {"ID": "gene-b0001", "Name": "b0001", "locus_tag": "b0001"})
+        cds = Feature("chr", "t", "CDS", 1, 9, None, "+", 0, {"ID": "cds1", "Parent": "gene-b0001", "Name": "hypothetical protein"})
+        self.assertNotIn("gene", inherit_cds_attributes((gene, cds))[1].attributes)
+
+
 if __name__ == "__main__":
     unittest.main()

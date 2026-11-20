@@ -122,7 +122,7 @@ def render_html_report(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Annostat bacterial annotation report</title>
+<title>Annostat genome annotation report</title>
 <style>
 :root{{--ink:#17231e;--muted:#66756d;--line:#dce6e0;--paper:#fff;--background:#f3f7f5;--green:#087f5b;--green-soft:#dff5ec}}
 *{{box-sizing:border-box}} body{{margin:0;background:var(--background);color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.5}}
@@ -142,7 +142,7 @@ table{{width:100%;border-collapse:collapse}} td{{border-bottom:1px solid var(--l
 <body>
 <header><strong>Annostat</strong><span>version {escape(str(summary["annostat_version"]))}</span></header>
 <main>
-<h1>Bacterial annotation report</h1>
+<h1>Genome annotation report</h1>
 <p class="subtitle">{escape(Path(input_files["gff3"]).name)} analyzed against {escape(Path(input_files["fasta"]).name)}</p>
 <section class="metrics">{metrics}</section>
 <section class="summary-grid">

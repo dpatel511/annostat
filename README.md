@@ -153,8 +153,12 @@ to the installed command.
   The report shows gene, mRNA, CDS-model and CDS-row counts. CDSs inherit
   `product`/`Dbxref` from their mRNA, then gene. Use `--genetic-code 1` for
   nuclear fungal inputs without `transl_table`. Overlaps between isoforms of one
-  gene are not QC overlap/duplicate findings. The rRNA/tRNA completeness checks
-  still expect bacterial 5S/16S/23S rRNAs.
+  gene are not QC overlap/duplicate findings. A gene's `Name` counts as its symbol
+  when it has no `gene` attribute and the name is not its ID or locus tag, and COG
+  categories are read from `note=COG:X` when `Dbxref` has none (funannotate). mRNAs
+  are not counted as RNA features. The 5S/16S/23S rRNA check runs only for
+  bacterial tables (4, 11, 25); tRNA coverage also reads yeast-style names such as
+  `tD(GUC)`.
 - NCBI tables **1, 3, 4, 11 and 25** are supported, per CDS. A CDS's own GFF3
   `transl_table` (or its sequence `region`'s) applies to that CDS; every other CDS
   uses `analyze --genetic-code TABLE` / `compare --genetic-code LABEL TABLE`, else a

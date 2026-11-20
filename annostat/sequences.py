@@ -12,7 +12,7 @@ from Bio.Data.IUPACData import protein_letters_3to1
 from annostat.models import CdsSequence, Feature
 
 
-CALCULATION_POLICY = "annotation-metrics-1.5"
+CALCULATION_POLICY = "annotation-metrics-1.6"
 CDS_ANNOTATION_ATTRIBUTES = (
     "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
     "start_range", "end_range", "transl_except", "exception",
@@ -24,7 +24,10 @@ def inherit_cds_attributes(features: tuple[Feature, ...]) -> tuple[Feature, ...]
 
     A CDS inherits from a single gene/pseudogene parent, or from a single
     mRNA/transcript parent and that transcript's single gene/pseudogene parent.
-    Precedence is CDS, then transcript, then gene.
+    Precedence is CDS, then transcript, then gene. A gene's ``Name`` serves as
+    its symbol only when it has no ``gene`` attribute and the name is not its ID
+    or locus tag (funannotate convention). ``note`` is inherited so COG
+    categories recorded there can be read.
     """
     genes = {feature.id: feature for feature in features if feature.type in {"gene", "pseudogene"}}
     transcripts = {feature.id: feature for feature in features if feature.type in {"mRNA", "transcript"}}
@@ -42,7 +45,12 @@ def inherit_cds_attributes(features: tuple[Feature, ...]) -> tuple[Feature, ...]
             for parent in (gene, transcript):
                 if parent is None:
                     continue
-                inherited.update({key: parent.attributes[key] for key in CDS_ANNOTATION_ATTRIBUTES if key in parent.attributes})
+                inherited.update({key: parent.attributes[key] for key in (*CDS_ANNOTATION_ATTRIBUTES, "note")
+                                  if key in parent.attributes})
+                name = parent.attributes.get("Name", "").strip()
+                if (parent is gene and name and "gene" not in parent.attributes
+                        and name not in {parent.id, parent.attributes.get("locus_tag")}):
+                    inherited["gene"] = name
                 if parent.type == "pseudogene":
                     inherited["pseudo"] = "true"
         result.append(replace(feature, attributes={**inherited, **feature.attributes}) if inherited else feature)
@@ -84,6 +92,7 @@ _GENETIC_CODE_OVERRIDES = {
     25: {"TGA": "G"},
 }
 SUPPORTED_GENETIC_CODES = frozenset(_GENETIC_CODE_OVERRIDES)
+BACTERIAL_GENETIC_CODES = frozenset({4, 11, 25})
 _SUPPORTED_TEXT = "1, 3, 4, 11, or 25"
 _START_CODONS = {
     1: {"TTG", "CTG", "ATG"},

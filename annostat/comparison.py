@@ -25,6 +25,7 @@ from annostat.gene_report import gene_text_report, render_gene_report
 from annostat.plots import write_cog_comparison, write_comparison_overview, write_gene_consequences
 from annostat.qc import feature_quality_findings, quality_summary, sequence_quality_findings
 from annostat.sequences import (
+    BACTERIAL_GENETIC_CODES,
     CALCULATION_POLICY,
     genetic_code_source as resolve_genetic_code_source,
     iter_cds_sequences,
@@ -156,7 +157,7 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
     )
     genetic_code = resolve_genetic_code(features, dataset.genetic_code)
     genetic_code_source = resolve_genetic_code_source(features, dataset.genetic_code)
-    findings = feature_quality_findings(features, genome, circular_seqids)
+    findings = feature_quality_findings(features, genome, circular_seqids, genetic_code in BACTERIAL_GENETIC_CODES)
     start_counts: Counter[str] = Counter()
     table_counts: Counter[int] = Counter()
     recognized_starts = 0
@@ -390,7 +391,7 @@ def _render_report(summary: dict[str, object], plot_paths: list[Path]) -> str:
     subtitle = (
         "Two annotations of identical genome sequences. Structural agreement does not establish biological correctness."
         if gene_result is not None else
-        "A normalized comparison of annotated bacterial assemblies. Dataset labels do not imply strain-level relatedness."
+        "A normalized comparison of annotated genome assemblies. Dataset labels do not imply strain-level relatedness."
     )
     if gene_result is not None:
         gene_panel = render_gene_report(summary)

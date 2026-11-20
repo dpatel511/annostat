@@ -10,6 +10,16 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Remove bacterial assumptions from fungal analyses: report and CLI titles no
+  longer say "bacterial"; the 5S/16S/23S rRNA check runs only for bacterial
+  translation tables (4, 11, 25); mRNAs are no longer counted as RNA features;
+  tRNA coverage recognizes yeast-style names such as `tD(GUC)1` (RefSeq
+  *A. fumigatus* previously reported all 20 amino acids missing).
+- Read funannotate functional labels: a gene's `Name` is its symbol when it has
+  no `gene` attribute and differs from its ID and locus tag, and COG categories
+  fall back to `note=COG:X` when `Dbxref` has none (funannotate *Mucor mucedo*:
+  0 → 3,819 CDSs with symbols, 0 → 10,554 with COG categories). Calculation
+  policy advances to `annotation-metrics-1.6`; bacterial outputs are unchanged.
 - Translate each CDS with its own NCBI table. A GFF3 that declared
   `transl_table` on only some CDSs (RefSeq fungal mitochondrial genes) previously
   had that table applied to every CDS: 1,030 of 5,136 *S. pombe* RefSeq proteins

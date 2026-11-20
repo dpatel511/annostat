@@ -29,6 +29,7 @@ from annostat.qc import (
 )
 from annostat.report import render_html_report
 from annostat.sequences import (
+    BACTERIAL_GENETIC_CODES,
     CALCULATION_POLICY,
     inherit_cds_attributes,
     genetic_code_source as resolve_genetic_code_source,
@@ -153,7 +154,8 @@ def _run_analysis(
     table_counts: Counter[int] = Counter()
     cds_lengths: list[int] = []
     filtered_records = []
-    quality_findings = feature_quality_findings(features, genome, circular_seqids)
+    quality_findings = feature_quality_findings(features, genome, circular_seqids,
+                                                selected_genetic_code in BACTERIAL_GENETIC_CODES)
 
     def observed_records():
         """Yield CDS records while collecting lengths for the histogram."""
