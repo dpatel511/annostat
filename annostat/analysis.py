@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Iterable
 
@@ -39,18 +40,23 @@ COG_CATEGORY_NAMES = {
 
 
 def cog_categories(feature: Feature) -> tuple[str, ...]:
-    """Return individual COG category letters from a feature's ``Dbxref``.
+    """Return COG category letters from ``Dbxref``, else from ``note=COG:X`` (funannotate).
 
     A multi-category value such as ``COG:OE`` produces ``("O", "E")`` so each
     functional assignment contributes independently to the category totals.
     """
 
-    categories: list[str] = []
-    for cross_reference in feature.attributes.get("Dbxref", "").split(","):
-        namespace, separator, value = cross_reference.partition(":")
-        if separator and namespace == "COG" and value.isalpha() and value.isupper():
-            # COG category strings contain one uppercase letter per assignment.
-            categories.extend(value)
+    def letters(text: str, separators: str) -> list[str]:
+        found: list[str] = []
+        for item in re.split(separators, text):
+            namespace, separator, value = item.strip().partition(":")
+            if separator and namespace == "COG" and value.isalpha() and value.isupper():
+                # COG category strings contain one uppercase letter per assignment.
+                found.extend(value)
+        return found
+
+    # Dbxref is authoritative; funannotate records categories in note=COG:X instead.
+    categories = letters(feature.attributes.get("Dbxref", ""), ",") or letters(feature.attributes.get("note", ""), "[,;]")
     return tuple(categories)
 
 
@@ -88,7 +94,7 @@ def analyze_features(features: Iterable[Feature]) -> dict[str, object]:
         seen_features.add(identity)
         total_features += 1
         type_counts[feature.type] += 1
-        if feature.type.lower().endswith("rna"):
+        if feature.type.lower().endswith("rna") and feature.type != "mRNA":
             rna_counts[feature.type] += 1
         if feature.type != "CDS":
             continue

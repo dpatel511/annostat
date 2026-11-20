@@ -353,7 +353,7 @@ class AnnostatTests(unittest.TestCase):
             self.assertIn("report_generation", written_summary["performance"]["stage_seconds"])
             self.assertGreater(written_summary["performance"]["peak_memory_bytes"], 0)
             report = (output / "report.html").read_text(encoding="utf-8")
-            self.assertIn("Bacterial annotation report", report)
+            self.assertIn("Genome annotation report", report)
             self.assertIn("Most-used codons", report)
             self.assertIn("Annotation quality findings", report)
             self.assertIn("Structural validation", report)
@@ -850,7 +850,7 @@ class AnnostatTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Analyze bacterial GFF3", result.stdout)
+        self.assertIn("Analyze bacterial and fungal GFF3", result.stdout)
         for command in ("analyze", "validate", "summarize", "compare", "fetch"):
             self.assertIn(command, result.stdout)
 

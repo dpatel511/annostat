@@ -7,6 +7,8 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 
+from Bio.Data.IUPACData import protein_letters_1to3
+
 from annostat.models import CdsSequence, Feature
 
 
@@ -18,6 +20,8 @@ _STANDARD_TRNA_AMINO_ACIDS = frozenset(
     }
 )
 _TRNA_PATTERN = re.compile(r"tRNA-([A-Za-z]{3})", re.IGNORECASE)
+# Yeast-style tRNA gene names: one-letter amino acid and anticodon, e.g. tD(GUC)1.
+_TRNA_ANTICODON_PATTERN = re.compile(r"(?<![A-Za-z])t([ACDEFGHIKLMNPQRSTVWY])\([ACGTU]{3}\)")
 _START_CODONS = {
     1: frozenset({"TTG", "CTG", "ATG"}),
     3: frozenset({"ATA", "ATG", "GTG"}),
@@ -291,8 +295,8 @@ def _adjacent_duplicate_findings(
     return findings
 
 
-def _structural_rna_findings(features: Iterable[Feature]) -> list[AnnotationIssue]:
-    """Check for the standard bacterial rRNAs and tRNA amino-acid coverage."""
+def _structural_rna_findings(features: Iterable[Feature], bacterial_rrna: bool = True) -> list[AnnotationIssue]:
+    """Check tRNA amino-acid coverage and, for bacterial tables, the 5S/16S/23S rRNAs."""
 
     observed_rrna: set[str] = set()
     observed_trna: set[str] = set()
@@ -309,8 +313,11 @@ def _structural_rna_findings(features: Iterable[Feature]) -> list[AnnotationIssu
             match = _TRNA_PATTERN.search(annotation)
             if match:
                 amino_acid = match.group(1).title()
-                if amino_acid in _STANDARD_TRNA_AMINO_ACIDS:
-                    observed_trna.add(amino_acid)
+            else:
+                match = _TRNA_ANTICODON_PATTERN.search(" ".join((feature.attributes.get("gene", ""), annotation)))
+                amino_acid = protein_letters_1to3.get(match.group(1), "") if match else ""
+            if amino_acid in _STANDARD_TRNA_AMINO_ACIDS:
+                observed_trna.add(amino_acid)
 
     findings = [
         AnnotationIssue(
@@ -319,7 +326,7 @@ def _structural_rna_findings(features: Iterable[Feature]) -> list[AnnotationIssu
             details=f"no {kind} rRNA annotation found",
         )
         for kind in _STANDARD_RRNA_TYPES
-        if kind not in observed_rrna
+        if bacterial_rrna and kind not in observed_rrna
     ]
     findings.extend(
         AnnotationIssue(
@@ -336,8 +343,13 @@ def feature_quality_findings(
     features: Iterable[Feature],
     genome: Mapping[str, str] | None = None,
     circular_seqids: frozenset[str] = frozenset(),
+    bacterial_rrna: bool = True,
 ) -> list[AnnotationIssue]:
-    """Return coordinate, pseudogene, partial, adjacency, and RNA findings."""
+    """Return coordinate, pseudogene, partial, adjacency, and RNA findings.
+
+    ``bacterial_rrna`` enables the 5S/16S/23S rRNA expectation; disable it for
+    eukaryotic translation tables, where those rRNA types do not apply.
+    """
 
     feature_list = list(features)
     cds_features = [feature for feature in feature_list if feature.type == "CDS"]
@@ -364,7 +376,7 @@ def feature_quality_findings(
     isoform_genes = _isoform_genes(feature_list)
     findings.extend(_overlap_findings(cds_features, genome, circular_seqids, isoform_genes))
     findings.extend(_adjacent_duplicate_findings(cds_features, isoform_genes))
-    findings.extend(_structural_rna_findings(feature_list))
+    findings.extend(_structural_rna_findings(feature_list, bacterial_rrna))
     return findings
 
 

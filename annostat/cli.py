@@ -45,7 +45,7 @@ def build_root_parser() -> argparse.ArgumentParser:
     return argparse.ArgumentParser(
         prog="annostat",
         description=(
-            "Analyze bacterial GFF3 annotations, validate input integrity, and "
+            "Analyze bacterial and fungal GFF3 annotations, validate input integrity, and "
             "summarize or compare completed analyses."
         ),
         epilog=(
@@ -70,7 +70,7 @@ def build_parser(prog: str = "annostat") -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         prog=prog,
-        description="Analyze bacterial GFF3 annotations against a genome FASTA file.",
+        description="Analyze bacterial or fungal GFF3 annotations against a genome FASTA file.",
         epilog=(
             "examples:\n"
             "  %(prog)s -f genome.fna -g annotations.gff3\n"
@@ -208,7 +208,7 @@ def build_compare_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         prog="annostat compare",
-        description="Compare two or more bacterial FASTA/GFF3 annotation datasets.",
+        description="Compare two or more bacterial or fungal FASTA/GFF3 annotation datasets.",
         epilog=(
             "examples:\n"
             "  annostat compare --genome genome-a a.fna a.gff3 --genome genome-b b.fna b.gff3\n"
@@ -418,7 +418,7 @@ def _main_analysis(command_arguments: list[str], prog: str = "annostat") -> int:
     )
     started = perf_counter()
     if not args.quiet:
-        print(f"Annostat {__version__} | bacterial genome annotation analysis", file=sys.stderr)
+        print(f"Annostat {__version__} | genome annotation analysis", file=sys.stderr)
         print(f"  FASTA  {args.fasta.resolve()}", file=sys.stderr)
         print(f"  GFF3   {args.gff.resolve()}\n", file=sys.stderr)
     step = 0
