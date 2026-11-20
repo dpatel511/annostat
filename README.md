@@ -9,8 +9,7 @@ GFF3** files. Outputs include offline HTML reports, JSON/TSV results, CDS FASTA
 exports and editable SVG plots. Annostat analyzes existing annotations; it does
 not annotate genomes or establish biological correctness.
 
-This development README builds on **1.2.0**; additions since that release are
-listed under Unreleased in the changelog. Check `annostat --version`; package indexes
+This README describes **1.3.0**. Check `annostat --version`; package indexes
 may provide an earlier release. See the changelog for version-specific fixes.
 
 ## Installation

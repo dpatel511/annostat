@@ -367,3 +367,7 @@ structural relationship and receive `protein_consequence=limited`. Incomplete
 trailing bases are not translated, whereas GenBank `/translation` may include an
 unambiguous partial final codon. Matching does not establish orthology between
 isoforms or gene versions.
+
+Evidence scope: fungal translations were checked against RefSeq proteins, while
+fungal gene-level comparison has so far been tested on constructed models only.
+The five-assembly public audit covers bacterial table-11 annotations.
