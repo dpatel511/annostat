@@ -68,6 +68,35 @@ async function unclipped(page, selector) {
           for (const [key,count] of Object.entries(gene.consequence_counts)) {
             assert.equal(await page.locator(`tr[data-consequence="${key}"] .gene-result-count strong`).innerText(), count.toLocaleString('en-US'));
           }
+          // Independent per-model outcome recount: each CDS model once, by its most similar relationship.
+          const order = ['unchanged','start_changed','stop_changed','duplicate_structure','boundary_alternative','internal_change','partial_overlap','frame_disagreement','no_overlap'];
+          const outcomeOf = r => {
+            if (r.status === 'matched') return r.relationship === 'exact' ? 'unchanged' : r.relationship === 'start_shift' ? 'start_changed' : 'stop_changed';
+            if (r.status === 'unmatched') return 'no_overlap';
+            if (r.relationship === 'exact') return 'duplicate_structure';
+            if (r.relationship === 'start_shift' || r.relationship === 'stop_shift') return 'boundary_alternative';
+            if (r.relationship === 'frame_disagreement') return 'frame_disagreement';
+            return r.start_delta_bp === 0 && r.stop_delta_bp === 0 ? 'internal_change' : 'partial_overlap';
+          };
+          for (const [index, label] of Object.keys(gene.cds_counts).entries()) {
+            const side = 'ab'[index], best = new Map();
+            for (const r of gene.relationships) {
+              if (r['id_'+side] === null) continue;
+              const key = [r.seqid, r.strand, r['id_'+side]].join('|'), value = outcomeOf(r);
+              if (!best.has(key) || order.indexOf(value) < order.indexOf(best.get(key))) best.set(key, value);
+            }
+            assert.equal(best.size, gene.cds_counts[label], 'every model has one outcome');
+            for (const key of order) {
+              const n = [...best.values()].filter(v => v === key).length;
+              const cell = page.locator(`tr[data-outcome="${key}"] td.gene-count-${side} strong`);
+              if (await cell.count()) assert.equal(await cell.innerText(), n.toLocaleString('en-US'), 'outcome '+key);
+              else assert.equal(n, 0, 'hidden outcome row has models');
+            }
+          }
+          if (await page.locator('button[data-filter-outcome="no_overlap"]').count()) {
+            await page.locator('button[data-filter-outcome="no_overlap"]').click();
+            assert.equal((await info()).recordsDisplay, gene.relationships.filter(r => r.status === 'unmatched').length, 'outcome jump');
+          }
           await page.locator('#gene-view').selectOption('all');
           assert.equal((await info()).recordsDisplay, gene.relationships.length);
           for (const category of [...new Set(gene.relationships.map(r => r.protein_consequence))]) {

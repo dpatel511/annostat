@@ -84,6 +84,82 @@ def description_summary(rows: list[dict], labels: tuple[str, str]) -> dict:
     }
 
 
+MODEL_OUTCOME_LABELS = {
+    "unchanged": "Unchanged structure",
+    "start_changed": "Start changed",
+    "stop_changed": "Stop changed",
+    "duplicate_structure": "Identical structure, not unique",
+    "boundary_alternative": "Start/stop alternative, not unique",
+    "internal_change": "Same ends, different internal structure",
+    "partial_overlap": "Partial overlap",
+    "frame_disagreement": "Frame disagreement",
+    "no_overlap": "No overlapping call",
+}
+PAIRED_OUTCOMES = ("unchanged", "start_changed", "stop_changed")
+
+
+def row_outcome(row: dict) -> str:
+    """Describe one relationship row; the most similar row defines a model's outcome."""
+    relationship = row["relationship"]
+    if row["status"] == "matched":
+        return {"exact": "unchanged", "start_shift": "start_changed", "stop_shift": "stop_changed"}[relationship]
+    if row["status"] == "unmatched":
+        return "no_overlap"
+    if relationship == "exact":
+        return "duplicate_structure"
+    if relationship in {"start_shift", "stop_shift"}:
+        return "boundary_alternative"
+    if relationship == "frame_disagreement":
+        return "frame_disagreement"
+    return "internal_change" if row["start_delta_bp"] == 0 and row["stop_delta_bp"] == 0 else "partial_overlap"
+
+
+def model_outcomes(rows: list[dict], labels: tuple[str, str]) -> dict:
+    """Assign every CDS model of each source to exactly one structural outcome."""
+    rank = {key: index for index, key in enumerate(MODEL_OUTCOME_LABELS)}
+    counts, profiles = {}, {}
+    for label, side in zip(labels, ("a", "b")):
+        best: dict[tuple, tuple[str, dict]] = {}
+        for row in rows:
+            identifier = row[f"id_{side}"]
+            if identifier is None:
+                continue
+            key = (row["seqid"], row["strand"], identifier)
+            outcome = row_outcome(row)
+            if key not in best or rank[outcome] < rank[best[key][0]]:
+                best[key] = (outcome, row)
+        tally = Counter(outcome for outcome, _ in best.values())
+        counts[label] = {key: tally[key] for key in MODEL_OUTCOME_LABELS}
+
+        def profile(selected):
+            lengths = sorted(row[f"protein_length_{side}"] for _, row in selected if row[f"protein_length_{side}"] is not None)
+            hypothetical = sum(row[f"product_status_{side}"] == "explicit_hypothetical" for _, row in selected)
+            middle = len(lengths) // 2
+            return {
+                "models": len(selected),
+                "median_protein_length_aa": (None if not lengths else lengths[middle] if len(lengths) % 2
+                                             else (lengths[middle - 1] + lengths[middle]) / 2),
+                "explicit_hypothetical_percent": 100 * hypothetical / len(selected) if selected else None,
+            }
+
+        profiles[label] = {
+            "no_overlap": profile([item for item in best.values() if item[0] == "no_overlap"]),
+            "paired": profile([item for item in best.values() if item[0] in PAIRED_OUTCOMES]),
+        }
+    return {
+        "labels": MODEL_OUTCOME_LABELS,
+        "counts": counts,
+        "profiles": profiles,
+        "methods": "Each CDS model of each source is counted once, by its most similar relationship: accepted pairs "
+                   "(unchanged structure, start changed, stop changed), then unpaired overlaps in the order identical "
+                   "structure, start/stop alternative, same start and stop with different internal structure, other "
+                   "frame-compatible partial overlap and frame disagreement, then no overlapping call on the same strand. "
+                   "Counts per source sum to its CDS models. Outcomes describe structure only and do not establish gene "
+                   "gain, loss or which model is correct. Profiles compare models without an overlapping call with "
+                   "accepted-pair models of the same source.",
+    }
+
+
 def genome_fingerprint(genome: Mapping[str, str]) -> str:
     """Hash sequence IDs and uppercase bases independently of FASTA formatting."""
 
@@ -392,7 +468,7 @@ def compare_cds(left: Iterable[CdsModel], right: Iterable[CdsModel], labels: tup
             rows.append(_row(None, b[j], labels, "unmatched"))
     rows.sort(key=lambda row: (row["seqid"], row["strand"], row["id_a"] or "", row["id_b"] or "", row["status"]))
     return {
-        "schema_version": "1.6", "coordinate_system": "1-based inclusive",
+        "schema_version": "1.7", "coordinate_system": "1-based inclusive",
         "scope": "CDS models only; RNA and gene-only pseudogene records are not matched. Unmatched CDS calls do not establish biological absence.",
         "cds_counts": {labels[0]: len(a), labels[1]: len(b)},
         "exact_model_count": exact_count,
@@ -403,5 +479,6 @@ def compare_cds(left: Iterable[CdsModel], right: Iterable[CdsModel], labels: tup
         "unmatched_cds_counts": {label: sum(row["status"] == "unmatched" and row[f"id_{suffix}"] is not None for row in rows) for label, suffix in zip(labels, ("a", "b"))},
         "consequence_methods": "Accepted pairs use ordered genomic codon coordinates, not score-optimized protein alignment. Protein-length and terminal deltas are B minus A. Identity includes gap columns. Initiation-specific mismatches are separated from other non-gap mismatches; neither represents a DNA mutation on these identical assemblies. Unknown/stop residues and unresolved codon mapping are marked limited. Source partial/pseudogene/exception context is not experimental validation.",
         "description_summary": description_summary(rows, labels),
+        "model_outcomes": model_outcomes(rows, labels),
         "relationships": rows,
     }

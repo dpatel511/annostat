@@ -75,6 +75,12 @@
         table.search.fixed('gene-status', null).search.fixed('gene-view', event.target.value === 'review' ? (search, row) => needsReview(row) : null).draw();
     });
     const changedConsequences = ['terminal_only', 'initiator_recoding', 'translation_difference'];
+    // Mirrors gene_comparison.row_outcome: the structural outcome a relationship row describes.
+    const rowOutcome = row => row.status === 'matched' ? {exact: 'unchanged', start_shift: 'start_changed', stop_shift: 'stop_changed'}[row.relationship]
+        : row.status === 'unmatched' ? 'no_overlap' : row.relationship === 'exact' ? 'duplicate_structure'
+        : ['start_shift', 'stop_shift'].includes(row.relationship) ? 'boundary_alternative'
+        : row.relationship === 'frame_disagreement' ? 'frame_disagreement'
+        : row.start_delta_bp === 0 && row.stop_delta_bp === 0 ? 'internal_change' : 'partial_overlap';
     const matchesConsequence = value => value === 'changed'
         ? row => row.status === 'matched' && changedConsequences.includes(row.protein_consequence)
         : row => row.protein_consequence === value;
@@ -375,12 +381,13 @@
             filterProducts(product.dataset.productA + '|' + product.dataset.productB);
             document.getElementById('gene-evidence').scrollIntoView({block: 'start'});
         }
-        const jump = event.target.closest('button[data-consequence], button[data-filter-consequence], button[data-filter-structure], button[data-filter-status]');
+        const jump = event.target.closest('button[data-consequence], button[data-filter-consequence], button[data-filter-structure], button[data-filter-status], button[data-filter-outcome]');
         if (jump) {
             // Every jump starts from all rows so no stale filter hides the requested evidence.
             const consequence = jump.dataset.consequence || jump.dataset.filterConsequence || '';
             const structure = jump.dataset.filterStructure || '';
             const statuses = (jump.dataset.filterStatus || '').split(',').filter(Boolean);
+            const outcome = jump.dataset.filterOutcome || '';
             productFilter.value = '';
             document.getElementById('gene-consequence').value = consequence;
             document.getElementById('gene-structure').value = structure;
@@ -388,7 +395,8 @@
             const test = matchesConsequence(consequence);
             table.search('').search.fixed('gene-product-status', null).search.fixed('gene-view', null)
                 .search.fixed('gene-structure', structure ? (search, row) => row.relationship === structure : null)
-                .search.fixed('gene-status', statuses.length ? (search, row) => statuses.includes(row.status) : null)
+                .search.fixed('gene-status', statuses.length ? (search, row) => statuses.includes(row.status)
+                    : outcome ? (search, row) => rowOutcome(row) === outcome : null)
                 .search.fixed('gene-consequence', consequence ? (search, row) => test(row) : null).draw();
             document.getElementById('gene-evidence').scrollIntoView({block: 'start'});
             document.querySelector('#gene-evidence input[type=search]').focus({preventScroll: true});

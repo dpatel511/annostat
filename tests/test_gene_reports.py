@@ -49,14 +49,17 @@ class GeneReportTests(unittest.TestCase):
         self.assertIn("DataTables 3.1.4", html)
         self.assertIn("comparison.txt", html)
         self.assertIn("1-based inclusive", html)
-        # Overview partition: every CDS model is counted exactly once in its own source.
-        from annostat.gene_report import model_partition
-        for label, counts, total in model_partition(gene):
+        # Model outcomes: every CDS model is counted exactly once in its own source.
+        outcomes = gene["model_outcomes"]["counts"]
+        for label, total in gene["cds_counts"].items():
+            counts = outcomes[label]
             self.assertEqual(sum(counts.values()), total, label)
-            self.assertEqual(counts["unmatched"], gene["unmatched_cds_counts"][label])
-            self.assertEqual(counts["identical"], gene["consequence_counts"].get("identical", 0))
-        self.assertIn("<b>Figure 1.</b> Outcome of every CDS model", html)
-        self.assertIn('data-filter-structure="unmatched"', html)
+            self.assertEqual(counts["no_overlap"], gene["unmatched_cds_counts"][label])
+            self.assertEqual(sum(counts[key] for key in ("unchanged", "start_changed", "stop_changed")),
+                             gene["status_counts"]["matched"])
+        self.assertEqual(payload["model_outcomes"], gene["model_outcomes"])
+        self.assertIn("<b>Table 1.</b> Outcome of every CDS model", html)
+        self.assertIn('data-filter-outcome="no_overlap"', html)
         with (output / "tables/gene_comparisons.tsv").open(newline="", encoding="utf-8") as handle:
             tsv = next(r for r in csv.DictReader(handle, delimiter="\t") if r["id_a"] == "gyrB_A")
         self.assertEqual(tsv["n_terminal_residues_a"], row["n_terminal_residues_a"])
@@ -64,6 +67,8 @@ class GeneReportTests(unittest.TestCase):
         self.assertEqual(json.loads((output / "comparison.json").read_text(encoding="utf-8")), saved)
         text = (output / "comparison.txt").read_text(encoding="utf-8")
         self.assertIn("Accepted one-to-one CDS pairs: 113", text)
+        self.assertIn("CDS model outcomes (each model counted once; A / B):", text)
+        self.assertIn("Unchanged structure: 112 / 112", text)
         self.assertIn("Terminal-only difference: 1", text)
         self.assertIn("gyrB_A", text)
         self.assertIn("MA", text)
@@ -78,9 +83,9 @@ class GeneReportTests(unittest.TestCase):
         self.assertIn('Terminal-only difference: 1 of 113 accepted pairs (0.9%)', html)
         self.assertIn('Initiation-context difference: 1 of 113 accepted pairs (0.9%)', html)
         self.assertIn('1 of 113 accepted pairs (0.9%)', html)
-        self.assertIn('113 / 114 CDS models (99.1%)', html)
-        self.assertIn('Exact CDS structure', html)
-        self.assertIn('Alternative start boundary', html)
+        self.assertIn('Of the 114 CDS models in A', html)
+        self.assertIn('Unchanged structure', html)
+        self.assertIn('Start changed', html)
         self.assertIn('2 unresolved relationship rows', html)
         self.assertIn('B shorter: <b>1</b> · B longer: <b>0</b> · Same length: <b>1</b>', html)
         self.assertIn('median absolute Δ: <strong>1 aa</strong>', html)

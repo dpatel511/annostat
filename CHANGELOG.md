@@ -26,6 +26,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Classify every CDS model of each source once by its most similar
+  relationship (unchanged, start or stop changed, non-unique identical structure
+  or boundary alternative, same ends with different internal structure, partial
+  overlap, frame disagreement, no overlapping call), exported as
+  `model_outcomes` with profiles of models without an overlapping call. Gene
+  JSON schema advances to 1.7.
 - NCBI table 3 (yeast mitochondrial) for per-CDS `transl_table=3` and
   `--genetic-code 3`.
 - `genetic_code_counts` and `recognized_start_count` in analysis JSON and
@@ -59,6 +65,10 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Reorganize the gene-level report around these per-model outcomes: one
+  summary sentence and outcome table, then paired-model differences, unpaired
+  models, product-label changes with examples, evidence and Methods.
+  Relationship-row counts move to Methods.
 - CDSs whose parent is an mRNA/transcript inherit `product`, `Dbxref` and other
   source attributes from that transcript and its gene (CDS values take precedence).
 - QC no longer reports overlapping, contained or adjacent-duplicate CDS findings
