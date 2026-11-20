@@ -94,13 +94,18 @@ a correct annotation, or provide statistical tests.
 For a runnable WSL demonstration, verified real-data examples, and an explanation
 of what to show, see the [gene-level walkthrough](gene-level-demo.md).
 
-Start with `comparison.html`. Its overview states how many models pair one-to-one
-and assigns every CDS model of each source to exactly one outcome: accepted pair
-with identical protein, accepted pair with a protein difference, accepted pair
-with limited evidence, overlapping but unresolved (candidate or ambiguous), or no
-overlapping call. These per-model counts sum to each source's CDS models; they
-differ from relationship-row counts, which can list one model several times.
-Key findings link to their evidence rows. Then filter and inspect
+Start with `comparison.html`. Its summary assigns every CDS model of each
+source to exactly one outcome, by its most similar relationship: paired
+(unchanged structure, start changed, stop changed) or not paired (identical
+structure that is not unique, start/stop alternative that is not unique, same
+start and stop with different internal structure, other partial overlap, frame
+disagreement, no overlapping call). Per-source counts sum to that source's CDS
+models and are exported as `gene_level_comparison.model_outcomes` (gene schema
+1.7) and in `comparison.txt`; relationship-row counts appear only in Methods,
+because one model can occupy several rows. Models without an overlapping call
+are profiled (median protein length, explicit-hypothetical share) against
+paired models of the same source. These outcomes describe structure only and
+do not establish gene gain or loss. Then filter and inspect
 individual relationships. Aggregate profiles are secondary. Use
 `comparison.txt` for a short summary and `tables/gene_comparisons.tsv` for all
 side-by-side evidence:

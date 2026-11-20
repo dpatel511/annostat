@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import json
-from collections import Counter
 from html import escape
 from importlib.resources import files
 from statistics import median
 
-from annostat.gene_comparison import PRODUCT_STATUS_LABELS
+from annostat.gene_comparison import PAIRED_OUTCOMES, PRODUCT_STATUS_LABELS
 from annostat.locus_context import CONTEXT_LABELS
 
 
+CHANGED_CONSEQUENCES = frozenset({"terminal_only", "initiator_recoding", "translation_difference"})
 CONSEQUENCE_LABELS = {
     "identical": "Identical protein",
     "terminal_only": "Terminal-only difference",
@@ -113,49 +113,27 @@ def _description_panel(gene: dict) -> str:
         f'{cell["pair_count"]:,} {PRODUCT_STATUS_LABELS[cell["product_status_a"]].lower()} → {PRODUCT_STATUS_LABELS[cell["product_status_b"]].lower()}'
         for cell in description["product_status_matrix"]
         if cell["product_status_a"] != cell["product_status_b"] and cell["pair_count"])
-    lead = (f'<p class="gene-lead"><b>{description["product_text_difference_pairs"]:,}</b> of {total:,} identical-protein pairs differ in product text'
-            f'{f"; category changes: {changes}" if changes else ""}.</p>' if total else
-            '<p class="gene-lead">No accepted pairs with reliable identical predicted proteins; label comparison not available.</p>')
+    if total:
+        lead = (f'<p class="gene-lead"><b>{description["product_text_difference_pairs"]:,}</b> of {total:,} identical-protein pairs differ in product text'
+                f'{f"; category changes: {changes}" if changes else ""}.</p>')
+    else:
+        lead = '<p class="gene-lead">No accepted pairs with reliable identical predicted proteins; label comparison not available.</p>'
+    normalized = lambda value: " ".join((value or "").split())
+    examples = [row for row in gene["relationships"] if row["status"] == "matched" and row["protein_consequence"] == "identical"
+                and normalized(row["product_a"]) != normalized(row["product_b"])][:5]
+    example_list = ""
+    if examples:
+        items = "".join(f'<tr><td>{escape(normalized(row["product_a"]) or "(missing)")}</td><td class="gene-arrow" aria-hidden="true">→</td>'
+                        f'<td>{escape(normalized(row["product_b"]) or "(missing)")}</td><td><code>{escape(row["id_a"])}</code></td></tr>' for row in examples)
+        example_list = (f'<div class="table-wrap"><table class="gene-examples"><caption>Examples of changed product text.</caption>'
+                        f'<thead><tr><th scope="col">A</th><th scope="col"><span class="gene-sr">to</span></th><th scope="col">B</th><th scope="col">CDS (A)</th></tr></thead>'
+                        f'<tbody>{items}</tbody></table></div>')
     header_cells = "".join(f'<th scope="col">{title}</th>' for title in PRODUCT_STATUS_LABELS.values())
     return f'''<section id="gene-descriptions" class="gene-section" aria-labelledby="gene-labels-title">
-<h2 id="gene-labels-title"><span>3</span>Product labels on identical proteins</h2>{lead}
+<h2 id="gene-labels-title"><span>4</span>Product labels of identical proteins</h2>{lead}{example_list}
 <figure class="gene-figure-block"><div class="table-wrap"><table class="gene-product-matrix">
 <thead><tr><th scope="col">A \\ B</th>{header_cells}</tr></thead><tbody>{rows}</tbody></table></div>
-<figcaption><b>Table 3.</b> Product-label category in A ({escape(labels[0])}, rows) and B ({escape(labels[1])}, columns); percentages of {total:,} identical-protein pairs. Select a cell to list its pairs.</figcaption></figure></section>'''
-
-
-PARTITION_LABELS = {
-    "identical": "Paired, identical protein",
-    "changed": "Paired, protein differs",
-    "limited": "Paired, limited evidence",
-    "unresolved": "Overlap, not paired",
-    "unmatched": "No overlapping call",
-}
-_PARTITION_FILTERS = {
-    "identical": 'data-filter-consequence="identical"',
-    "changed": 'data-filter-consequence="changed"',
-    "limited": 'data-filter-consequence="limited"',
-    "unresolved": 'data-filter-status="candidate,ambiguous"',
-    "unmatched": 'data-filter-structure="unmatched"',
-}
-
-
-def model_partition(gene: dict) -> list[tuple[str, Counter, int]]:
-    """Assign every CDS model of each source to exactly one correspondence outcome."""
-    result = []
-    for side, label in zip("ab", gene["cds_counts"]):
-        state: dict[tuple, str] = {}
-        for row in gene["relationships"]:
-            if row[f"id_{side}"] is None:
-                continue
-            key = (row["seqid"], row["strand"], row[f"id_{side}"])
-            if row["status"] == "matched":
-                consequence = row["protein_consequence"]
-                state[key] = consequence if consequence in {"identical", "limited"} else "changed"
-            else:
-                state.setdefault(key, "unresolved" if row["status"] in {"candidate", "ambiguous"} else "unmatched")
-        result.append((label, Counter(state.values()), gene["cds_counts"][label]))
-    return result
+<figcaption><b>Table 5.</b> Product-label category in A ({escape(labels[0])}, rows) and B ({escape(labels[1])}, columns); percentages of {total:,} identical-protein pairs. Select a cell to list its pairs.</figcaption></figure></section>'''
 
 
 def _share(count: int, total: int) -> str:
@@ -165,31 +143,110 @@ def _share(count: int, total: int) -> str:
     return "<0.1%" if 0 < value < 0.1 else f"{value:.1f}%"
 
 
-def _partition_panel(partition: list[tuple[str, Counter, int]], matched: int) -> str:
-    bars = ""
-    for side, (label, counts, total) in zip("AB", partition):
-        segments = "".join(
-            f'<span class="gene-seg gene-seg-{key}" style="width:{100 * counts[key] / total:.3f}%" '
-            f'title="{PARTITION_LABELS[key]}: {counts[key]:,} ({_share(counts[key], total)})"></span>'
-            for key in PARTITION_LABELS if total and counts[key])
-        description = "; ".join(f"{PARTITION_LABELS[key]} {counts[key]:,} ({_share(counts[key], total)})" for key in PARTITION_LABELS)
-        bars += (f'<div class="gene-partition-row"><div class="gene-partition-label"><b>{side}</b> {escape(label)}'
-                 f'<small>{matched:,} / {total:,} CDS models ({_share(matched, total)}) paired</small></div>'
-                 f'<div class="gene-bar" role="img" aria-label="{escape(label)}: {escape(description)}">{segments}</div></div>')
-    legend = ""
-    for key, title in PARTITION_LABELS.items():
-        values = "".join(f'<td>{counts[key]:,}</td><td class="gene-pct">{_share(counts[key], total)}</td>' for _, counts, total in partition)
-        enabled = any(counts[key] for _, counts, _ in partition)
-        legend += (f'<tr><th scope="row"><span class="gene-swatch gene-seg-{key}"></span>{title}</th>{values}'
-                   f'<td><button type="button" class="gene-link" {_PARTITION_FILTERS[key]} aria-controls="gene-table" '
-                   f'{"" if enabled else "disabled"}>View</button></td></tr>')
-    names = "".join(f'<th scope="col" colspan="2">{side}<span class="gene-col-label"> · {escape(label)}</span></th>'
-                    for side, (label, _, _) in zip("AB", partition))
-    return (f'<figure class="gene-figure-block"><div class="gene-partition">{bars}</div>'
-            f'<figcaption><b>Figure 1.</b> Outcome of every CDS model in each annotation; each model is counted once.</figcaption></figure>'
-            f'<div class="table-wrap"><table class="gene-partition-table">'
-            f'<thead><tr><th scope="col">Outcome</th>{names}<th scope="col"><span class="gene-sr">Rows</span></th></tr></thead>'
-            f'<tbody>{legend}</tbody></table></div>')
+def _outcome_table(gene: dict) -> str:
+    outcomes = gene["model_outcomes"]
+    labels = list(gene["cds_counts"])
+    totals = list(gene["cds_counts"].values())
+    counts = [outcomes["counts"][label] for label in labels]
+
+    def row(key: str, title: str) -> str:
+        values = [side[key] for side in counts]
+        cells = "".join(f'<td class="gene-count-{side}"><strong>{value:,}</strong></td><td class="gene-pct">{_share(value, total)}</td>'
+                        for side, value, total in zip("ab", values, totals))
+        bars = "".join(f'<span class="gene-mini gene-mini-{side}" style="--share:{value / total if total else 0:.4f}"></span>'
+                       for side, value, total in zip("ab", values, totals))
+        return (f'<tr data-outcome="{key}"><th scope="row"><i class="gene-swatch gene-o-{key}"></i>{title}</th>{cells}<td class="gene-share">{bars}</td>'
+                f'<td><button type="button" class="gene-link" data-filter-outcome="{key}" aria-controls="gene-table">View</button></td></tr>')
+
+    body = ""
+    for group, keys in (("Paired one-to-one", PAIRED_OUTCOMES),
+                        ("Not paired", tuple(key for key in outcomes["labels"] if key not in PAIRED_OUTCOMES))):
+        group_values = [sum(side[key] for key in keys) for side in counts]
+        body += (f'<tr class="gene-group"><th scope="rowgroup">{group}</th>'
+                 + "".join(f'<td>{value:,}</td><td class="gene-pct">{_share(value, total)}</td>' for value, total in zip(group_values, totals))
+                 + '<td colspan="2"></td></tr>')
+        body += "".join(row(key, outcomes["labels"][key]) for key in keys if any(side[key] for side in counts))
+    head = "".join(f'<th scope="col" colspan="2">{side}<span class="gene-col-label"> · {escape(label)}</span></th>'
+                   for side, label in zip("AB", labels))
+    total_cells = "".join(f'<td>{total:,}</td><td></td>' for total in totals)
+    return (f'<div class="table-wrap"><table class="gene-outcome-table"><caption><b>Table 1.</b> Outcome of every CDS model; '
+            f'each model is counted once. Bars: A (upper), B (lower).</caption>'
+            f'<thead><tr><th scope="col">Outcome</th>{head}<th scope="col"><span class="gene-sr">Share</span></th><th scope="col"><span class="gene-sr">Rows</span></th></tr></thead>'
+            f'<tbody>{body}</tbody><tfoot><tr><th scope="row">CDS models</th>{total_cells}<td colspan="2"></td></tr></tfoot></table></div>')
+
+
+def _profile_table(gene: dict) -> str:
+    labels = list(gene["cds_counts"])
+    profiles = gene["model_outcomes"]["profiles"]
+    if not any(profiles[label]["no_overlap"]["models"] for label in labels):
+        return '<p class="gene-muted">Every CDS model overlaps a CDS in the other annotation.</p>'
+    groups = [(side, kind, profiles[label][kind]) for side, label in zip("AB", labels) for kind in ("no_overlap", "paired")]
+    longest = max((item["median_protein_length_aa"] or 0) for _, _, item in groups) or 1
+
+    def cell(value, text, share):
+        if value is None:
+            return '<td class="gene-muted">Not available</td>'
+        return f'<td><span class="gene-value">{text}</span><span class="gene-meter" style="--share:{share:.4f}"></span></td>'
+
+    head = "".join(f'<th scope="col">{side} {"no overlap" if kind == "no_overlap" else "paired"}</th>' for side, kind, _ in groups)
+    rows = (f'<tr><th scope="row">CDS models</th>' + "".join(f'<td>{item["models"]:,}</td>' for _, _, item in groups) + "</tr>"
+            + '<tr><th scope="row">Median protein length</th>' + "".join(
+                cell(item["median_protein_length_aa"], f'{item["median_protein_length_aa"]:g} aa' if item["median_protein_length_aa"] is not None else "",
+                     (item["median_protein_length_aa"] or 0) / longest) for _, _, item in groups) + "</tr>"
+            + '<tr><th scope="row">Explicit “hypothetical protein”</th>' + "".join(
+                cell(item["explicit_hypothetical_percent"], f'{item["explicit_hypothetical_percent"]:.1f}%' if item["explicit_hypothetical_percent"] is not None else "",
+                     (item["explicit_hypothetical_percent"] or 0) / 100) for _, _, item in groups) + "</tr>")
+    return (f'<div class="table-wrap"><table class="gene-profile"><caption><b>Table 4.</b> Models with no overlapping call in the other '
+            f'annotation, compared with paired models of the same annotation.</caption><thead><tr><th scope="col"></th>{head}</tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>')
+
+
+_FATE_SHORT = {
+    "unchanged": "Unchanged", "start_changed": "Start changed", "stop_changed": "Stop changed",
+    "duplicate_structure": "Identical, not unique", "boundary_alternative": "Boundary alt., not unique",
+    "internal_change": "Internal structure", "partial_overlap": "Partial overlap",
+    "frame_disagreement": "Frame disagreement", "no_overlap": "No overlap",
+}
+
+
+def _fate_figure(gene: dict) -> str:
+    """Both annotations on one count scale; paired models are linked between the bars."""
+    outcomes = gene["model_outcomes"]
+    labels = list(gene["cds_counts"])
+    totals = list(gene["cds_counts"].values())
+    scale = max(totals) or 1
+    keys = list(outcomes["labels"])
+
+    def bar(side: str, label: str, total: int) -> str:
+        counts = outcomes["counts"][label]
+        segments = ""
+        for key in keys:
+            if not counts[key]:
+                continue
+            share = counts[key] / total
+            text = f'<span>{_FATE_SHORT[key]} · {_share(counts[key], total)}</span>' if counts[key] / scale >= .14 else ""
+            segments += (f'<i class="gene-o-{key}" style="width:{100 * share:.3f}%" '
+                         f'title="{outcomes["labels"][key]}: {counts[key]:,} ({_share(counts[key], total)})">{text}</i>')
+        return (f'<div class="gene-fate-row"><div class="gene-fate-name"><b class="gene-fate-side">{side}</b>'
+                f'<span>{escape(label)}</span><small>{total:,} CDS models</small></div>'
+                f'<div class="gene-fate-track" style="width:{100 * total / scale:.3f}%">{segments}</div></div>')
+
+    paired = outcomes["counts"][labels[0]]
+    links = "".join(f'<i class="gene-o-{key}" style="width:{100 * paired[key] / scale:.3f}%"></i>'
+                    for key in PAIRED_OUTCOMES if paired[key])
+    matched = sum(paired[key] for key in PAIRED_OUTCOMES)
+    link_label = (f'<span class="gene-fate-link-label">{matched:,} models paired one-to-one</span>' if matched else "")
+    legend = "".join(f'<li><i class="gene-o-{key}"></i>{outcomes["labels"][key]}</li>'
+                     for key in keys if any(outcomes["counts"][label][key] for label in labels))
+    description = "; ".join(f"{label}: " + ", ".join(f"{outcomes['labels'][key]} {outcomes['counts'][label][key]:,}"
+                                                   for key in keys if outcomes["counts"][label][key]) for label in labels)
+    return (f'<figure class="gene-fate" role="img" aria-label="{escape(description)}">'
+            f'{bar("A", labels[0], totals[0])}'
+            f'<div class="gene-fate-row gene-fate-links-row"><div class="gene-fate-name"></div><div class="gene-fate-links">{links}{link_label}</div></div>'
+            f'{bar("B", labels[1], totals[1])}'
+            f'<ul class="gene-fate-legend">{legend}</ul>'
+            f'<figcaption><b>Figure 1.</b> Fate of every CDS model, drawn to one scale. Paired models (left) correspond one-to-one '
+            f'between A and B; the remaining models overlap without a unique pair or have no overlapping call.</figcaption></figure>')
 
 
 _DELTA_BINS = ((None, -500, "≤−500"), (-499, -100, "−499 to −100"), (-99, -25, "−99 to −25"), (-24, -1, "−24 to −1"),
@@ -241,94 +298,75 @@ def _description_text(gene: dict) -> list[str]:
     return lines
 
 
-def _jump(attribute: str) -> str:
-    return f' <button type="button" class="gene-link" {attribute} aria-controls="gene-table">View rows</button>'
-
-
 def render_gene_report(summary: dict) -> str:
-    """Present scientific findings before the complete, offline evidence browser."""
+    """Present each CDS model's outcome first, then supporting tables and the evidence browser."""
     gene = summary["gene_level_comparison"]
     loci = review_loci(gene["relationships"])
     labels = list(gene["cds_counts"])
+    totals = list(gene["cds_counts"].values())
+    outcome_counts = [gene["model_outcomes"]["counts"][label] for label in labels]
     matched = gene["status_counts"].get("matched", 0)
     counts = gene["consequence_counts"]
-    identical = counts.get("identical", 0)
-    changed = sum(counts.get(key, 0) for key in ("terminal_only", "initiator_recoding", "translation_difference"))
-    deltas = [row["protein_length_delta_aa"] for row in gene["relationships"]
-              if row["protein_consequence"] in {"terminal_only", "initiator_recoding", "translation_difference"}]
-    limited = counts.get("limited", 0)
-    structures = Counter(row["relationship"] for row in gene["relationships"] if row["status"] == "matched")
+    deltas = [row["protein_length_delta_aa"] for row in gene["relationships"] if row["protein_consequence"] in CHANGED_CONSEQUENCES]
     status = gene["status_counts"]
     unresolved = len(gene["relationships"]) - matched
     agreement = gene["exact_agreement"]
     exact = f"{100 * agreement:.2f}%" if agreement is not None else "Not available"
-    total_models = sum(gene["cds_counts"].values())
-    partition = model_partition(gene)
-    description = gene["description_summary"]
     ambiguous_groups = sum(locus["kind"] == "ambiguous" for locus in loci)
+    description = gene["description_summary"]
 
     def percent(count, total):
         return f"{100 * count / total:.1f}%" if total else "Not available"
 
-    paired = " · ".join(f"{side} {percent(matched, total)}" for side, total in zip("AB", gene["cds_counts"].values()))
-    unpaired = " · ".join(f"{side} {total - matched:,}" for side, total in zip("AB", gene["cds_counts"].values()))
-    stats = "".join(f'<div><dt>{title}</dt><dd>{value}</dd><p>{note}</p></div>' for title, value, note in (
-        ("Accepted pairs", f"{matched:,}", f"of CDS models paired: {paired}"),
-        ("Identical proteins", percent(identical, matched),
-         f"{identical:,} of {matched:,} accepted pairs ({percent(identical, matched)})" if matched else "No accepted pairs"),
-        ("Structural agreement", exact, f'{gene["exact_model_count"]:,} shared CDS structures'),
-        ("Models without a pair", unpaired, "unresolved overlap or no overlapping call"),
-    ))
-    if matched:
-        lead = (f"{matched:,} CDS models pair one-to-one between the two annotations; "
-                f"{percent(identical, matched)} of these pairs encode identical proteins.")
+    a, b = outcome_counts
+    unpaired = [sum(side[key] for key in side if key not in PAIRED_OUTCOMES and key != "no_overlap") for side in outcome_counts]
+    if totals[0]:
+        lead = (f'Of the {totals[0]:,} CDS models in A, <b class="gene-t-unchanged">{_share(a["unchanged"], totals[0])}</b> are unchanged in B, '
+                f'<b class="gene-t-start_changed">{_share(a["start_changed"] + a["stop_changed"], totals[0])}</b> differ only at the start or stop, '
+                f'<b class="gene-t-partial_overlap">{_share(unpaired[0], totals[0])}</b> overlap a B model without a one-to-one pairing and '
+                f'<b class="gene-t-no_overlap">{_share(a["no_overlap"], totals[0])}</b> have no overlapping call. '
+                f'B has <b>{b["no_overlap"]:,}</b> calls with no overlapping A model.')
     else:
-        lead = "No one-to-one CDS pairs were accepted."
+        lead = f'A has no CDS models; all {totals[1]:,} B models have no counterpart.'
+    if not matched:
+        lead = "No one-to-one CDS pairs were accepted. " + lead
 
-    findings = [f'<b>{gene["exact_model_count"]:,}</b> CDS structures are identical in both annotations ({exact} structural agreement).'
-                + (_jump('data-filter-structure="exact"') if structures["exact"] else "")]
-    if structures["start_shift"] or structures["stop_shift"]:
-        shift = (f'; B encodes the longer protein in <b>{sum(delta > 0 for delta in deltas):,}</b> and the shorter in '
-                 f'<b>{sum(delta < 0 for delta in deltas):,}</b> (median |Δ| {median(abs(delta) for delta in deltas):g} aa)' if deltas else "")
-        findings.append(f'<b>{structures["start_shift"]:,}</b> pairs differ at the start and <b>{structures["stop_shift"]:,}</b> at the stop{shift}.'
-                        + (_jump('data-filter-consequence="changed"') if changed else ""))
-    unmatched_counts = gene["unmatched_cds_counts"]
-    if any(unmatched_counts.values()):
-        findings.append(" and ".join(f'<b>{count:,}</b> {side}' for side, count in zip("AB", unmatched_counts.values()))
-                        + " calls overlap no CDS in the other annotation." + _jump('data-filter-structure="unmatched"'))
-    unresolved_models = [model_counts["unresolved"] for _, model_counts, _ in partition]
-    if any(unresolved_models):
-        findings.append(" and ".join(f'<b>{count:,}</b> {side}' for side, count in zip("AB", unresolved_models))
-                        + f" models overlap but cannot be paired one-to-one ({ambiguous_groups:,} ambiguous groups)."
-                        + _jump('data-filter-status="candidate,ambiguous"'))
-    if description["product_text_difference_pairs"]:
-        findings.append(f'<b>{description["product_text_difference_pairs"]:,}</b> identical proteins carry different product text.'
-                        ' <a class="gene-link" href="#gene-descriptions">Table 3</a>')
-    if limited:
-        findings.append(f'<b>{limited:,}</b> pairs have limited protein evidence (internal stops, unknown residues or unmapped codons).'
-                        + _jump('data-filter-consequence="limited"'))
-    finding_items = "".join(f"<li>{item}</li>" for item in findings)
-
-    outcomes = ""
+    protein_rows = ""
     for key, label in CONSEQUENCE_LABELS.items():
         count = counts.get(key, 0)
-        outcomes += (f'<tr data-consequence="{key}" aria-label="{label}: {count:,} of {matched:,} accepted pairs ({percent(count, matched)})">'
-                     f'<th scope="row"><span class="gene-swatch gene-color-{key}"></span>{label}</th>'
-                     f'<td class="gene-result-count"><strong>{count:,}</strong></td><td class="gene-pct">{percent(count, matched)}</td>'
-                     f'<td class="gene-share"><span class="gene-mini gene-color-{key}" style="--share:{count / matched if matched else 0:.4f}"></span></td>'
-                     f'<td><button type="button" class="gene-link" data-consequence="{key}" aria-controls="gene-table" {"disabled" if not count else ""}>View</button></td></tr>')
-    boundary_rows = "".join(
-        f'<tr><th scope="row"><span class="gene-swatch gene-color-{key}"></span>{label}</th><td>{structures[key]:,}</td>'
-        f'<td class="gene-pct">{percent(structures[key], matched)}</td>'
-        f'<td class="gene-share"><span class="gene-mini gene-color-{key}" style="--share:{structures[key] / matched if matched else 0:.4f}"></span></td></tr>'
-        for key, label in (("exact", "Exact CDS structure"), ("start_shift", "Alternative start boundary"), ("stop_shift", "Alternative stop boundary")))
-    length_block = '<p class="gene-muted">No interpretable protein differences.</p>'
+        if not count:
+            continue
+        protein_rows += (f'<tr data-consequence="{key}" aria-label="{label}: {count:,} of {matched:,} accepted pairs ({percent(count, matched)})">'
+                         f'<th scope="row">{label}</th><td class="gene-result-count"><strong>{count:,}</strong></td>'
+                         f'<td class="gene-pct">{percent(count, matched)}</td>'
+                         f'<td><button type="button" class="gene-link" data-consequence="{key}" aria-controls="gene-table">View</button></td></tr>')
+    changed_pairs = a["start_changed"] + a["stop_changed"]
+    unchanged_other = sum(row["status"] == "matched" and row["relationship"] == "exact" and row["protein_consequence"] != "identical"
+                          for row in gene["relationships"])
+    paired_lead = (f'<b>{changed_pairs:,}</b> of {matched:,} pairs ({percent(changed_pairs, matched)}) differ in structure: '
+                   f'{a["start_changed"]:,} at the start and {a["stop_changed"]:,} at the stop.'
+                   + (f' {unchanged_other:,} pairs with unchanged structure translate differently or have limited evidence.' if unchanged_other else
+                      ' Every pair with unchanged structure encodes an identical protein.')) if matched else "No accepted pairs."
+    direction_rows = ""
+    for key, title in (("start_shift", "Start changed"), ("stop_shift", "Stop changed")):
+        selected = [row["protein_length_delta_aa"] for row in gene["relationships"]
+                    if row["status"] == "matched" and row["relationship"] == key and row["protein_consequence"] in CHANGED_CONSEQUENCES]
+        if selected:
+            direction_rows += (f'<tr><th scope="row">{title}</th><td>{sum(value > 0 for value in selected):,}</td>'
+                               f'<td>{sum(value < 0 for value in selected):,}</td><td>{selected.count(0):,}</td></tr>')
+    direction_table = (f'<div class="table-wrap"><table class="gene-direction"><caption><b>Table 3.</b> Protein length in B relative to A, among interpretable protein differences.</caption>'
+                       f'<thead><tr><th scope="col">Pairs</th><th scope="col">B longer</th><th scope="col">B shorter</th><th scope="col">Same</th></tr></thead>'
+                       f'<tbody>{direction_rows}</tbody></table></div>') if direction_rows else ""
+    figure = ""
     if deltas:
-        length_block = f'''<figure class="gene-figure-block">{_length_histogram(deltas)}
+        figure = f'''<figure class="gene-figure-block gene-figure-wide">{_length_histogram(deltas)}
 <figcaption><b>Figure 2.</b> Protein length change among {len(deltas):,} interpretable differences. B shorter: <b>{sum(delta < 0 for delta in deltas):,}</b> · B longer: <b>{sum(delta > 0 for delta in deltas):,}</b> · Same length: <b>{deltas.count(0):,}</b>; median absolute Δ: <strong>{median(abs(delta) for delta in deltas):g} aa</strong>; signed range: {min(deltas):+d} to {max(deltas):+d} aa.</figcaption></figure>'''
     context = gene.get("source_context")
-    context_line = (f' {context["models_with_observations"]:,} of {context["model_count"]:,} unresolved models have source-context observations '
-                    '(<a href="tables/gene_context.tsv">TSV</a>).' if context is not None else "")
+    context_line = (f' {context["models_with_observations"]:,} of {context["model_count"]:,} unpaired models have source-context '
+                    'observations (overlapping RNA/pseudogene records, opposite-strand CDSs or sequence edges; <a href="tables/gene_context.tsv">TSV</a>).'
+                    if context is not None and context["model_count"] else "")
+    unpaired_lead = (f'<b>{totals[0] - matched:,}</b> A and <b>{totals[1] - matched:,}</b> B models have no one-to-one pair. '
+                     'Overlapping but unpaired models are classified in Table 1 by their most similar relationship.' + context_line)
     payload = json.dumps(gene, ensure_ascii=True).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     locus_payload = json.dumps(loci, ensure_ascii=True).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     assets = files("annostat").joinpath("assets")
@@ -336,11 +374,22 @@ def render_gene_report(summary: dict) -> str:
     scripts = "\n".join(assets.joinpath(name).read_text(encoding="utf-8") for name in ("datatables-3.1.4.min.js", "gene_report.js"))
     license_text = escape(assets.joinpath("datatables-LICENSE.txt").read_text(encoding="utf-8"))
     consequence_options = "".join(f'<option value="{key}">{label}</option>' for key, label in CONSEQUENCE_LABELS.items())
-    product_options = "".join(f'<option value="{a}|{b}">A {title_a} / B {title_b}</option>'
-                              for a, title_a in PRODUCT_STATUS_LABELS.items() for b, title_b in PRODUCT_STATUS_LABELS.items())
+    product_options = "".join(f'<option value="{x}|{y}">A {title_x} / B {title_y}</option>'
+                              for x, title_x in PRODUCT_STATUS_LABELS.items() for y, title_y in PRODUCT_STATUS_LABELS.items())
     structure_options = "".join(f'<option value="{key}">{RELATIONSHIP_LABELS[key]}</option>'
                                 for key in ("exact", "start_shift", "stop_shift", "frame_disagreement", "overlap", "unmatched"))
-    definitions = "".join(f"<dt>{CONSEQUENCE_LABELS[key]}</dt><dd>{text}</dd>" for key, text in (
+    outcome_definitions = "".join(f"<dt>{gene['model_outcomes']['labels'][key]}</dt><dd>{text}</dd>" for key, text in (
+        ("unchanged", "Accepted pair with identical CDS structure (segments, strand and frame)."),
+        ("start_changed", "Accepted pair sharing the stop and all other segments; the start differs."),
+        ("stop_changed", "Accepted pair sharing the start and all other segments; the stop differs."),
+        ("duplicate_structure", "Identical structure exists in the other annotation, but repeated structures (often isoforms) prevent a unique pairing."),
+        ("boundary_alternative", "A start or stop alternative exists but is not unique."),
+        ("internal_change", "Same start and stop as an overlapping model, different internal segments (e.g. intron positions)."),
+        ("partial_overlap", "Frame-compatible overlap with different ends and/or segments."),
+        ("frame_disagreement", "Overlap only in a different reading frame."),
+        ("no_overlap", "No CDS on the same strand overlaps in the other annotation."),
+    ))
+    protein_definitions = "".join(f"<dt>{CONSEQUENCE_LABELS[key]}</dt><dd>{text}</dd>" for key, text in (
         ("identical", "Translated residues at corresponding genomic codons are identical."),
         ("terminal_only", "Only a terminal boundary differs; all shared residues match."),
         ("initiator_recoding", "Initiator-methionine recoding explains the shared-codon mismatch."),
@@ -348,22 +397,19 @@ def render_gene_report(summary: dict) -> str:
         ("limited", "Internal stops, unknown residues or unmapped codons prevent residue-level comparison."),
     ))
     return f'''<style>{css}</style><section class="gene-report" id="gene-report">
-<nav class="gene-nav" aria-label="Report sections"><a href="#gene-overview">Summary</a><a href="#gene-differences">Differences</a><a href="#gene-descriptions">Product labels</a><a href="#gene-evidence">Evidence</a><a href="#gene-methods">Methods</a><a href="#report-data">Data</a></nav>
+<nav class="gene-nav" aria-label="Report sections"><a href="#gene-overview">Summary</a><a href="#gene-differences">Paired models</a><a href="#gene-unpaired">Unpaired models</a><a href="#gene-descriptions">Product labels</a><a href="#gene-evidence">Evidence</a><a href="#gene-methods">Methods</a><a href="#report-data">Data</a></nav>
 <section class="gene-section" id="gene-overview" aria-labelledby="gene-summary-title"><h2 id="gene-summary-title"><span>1</span>Summary</h2>
-<p class="gene-lead">{lead}</p>
-<dl class="gene-stats">{stats}</dl>
-<div class="gene-two-col"><div>{_partition_panel(partition, matched)}</div>
-<div><h3>Key findings</h3><ul class="gene-findings">{finding_items}</ul></div></div></section>
-<section class="gene-section" id="gene-differences" aria-labelledby="gene-diff-title"><h2 id="gene-diff-title"><span>2</span>Differences between accepted pairs</h2>
-<div class="gene-two-col gene-even"><div><div class="table-wrap"><table class="gene-outcomes"><caption><b>Table 1.</b> Protein comparison of {matched:,} accepted pairs.</caption>
-<thead><tr><th scope="col">Outcome</th><th scope="col">Pairs</th><th scope="col">%</th><th scope="col"><span class="gene-sr">Share</span></th><th scope="col"><span class="gene-sr">Rows</span></th></tr></thead><tbody>{outcomes}</tbody></table></div></div>
-<div><div class="table-wrap"><table class="gene-boundaries"><caption><b>Table 2.</b> CDS structure of accepted pairs.</caption>
-<thead><tr><th scope="col">Relationship</th><th scope="col">Pairs</th><th scope="col">%</th><th scope="col"><span class="gene-sr">Share</span></th></tr></thead><tbody>{boundary_rows}</tbody></table></div></div></div>
-<div class="gene-figure-wide">{length_block}</div>
-<p class="gene-unresolved"><b>{unresolved:,} unresolved relationship rows</b>: {status.get("unmatched", 0):,} unmatched calls, {status.get("candidate", 0):,} candidate and {status.get("ambiguous", 0):,} ambiguous rows ({ambiguous_groups:,} ambiguous overlap groups).{context_line}
-<button type="button" class="gene-link" data-consequence="unresolved" aria-controls="gene-table" {'disabled' if not unresolved else ''}>View rows</button></p></section>
+<p class="gene-lead">{lead}</p>{_fate_figure(gene)}{_outcome_table(gene)}</section>
+<section class="gene-section" id="gene-differences" aria-labelledby="gene-diff-title"><h2 id="gene-diff-title"><span>2</span>Paired models that differ</h2>
+<p class="gene-lead gene-lead-small">{paired_lead}</p>
+<div class="gene-two-col gene-even"><div><div class="table-wrap"><table class="gene-outcomes"><caption><b>Table 2.</b> Protein comparison of {matched:,} accepted pairs.</caption>
+<thead><tr><th scope="col">Protein</th><th scope="col">Pairs</th><th scope="col">%</th><th scope="col"><span class="gene-sr">Rows</span></th></tr></thead><tbody>{protein_rows}</tbody></table></div></div>
+<div>{direction_table}</div></div>{figure}</section>
+<section class="gene-section" id="gene-unpaired" aria-labelledby="gene-unpaired-title"><h2 id="gene-unpaired-title"><span>3</span>Unpaired models</h2>
+<p class="gene-lead gene-lead-small">{unpaired_lead}</p>{_profile_table(gene)}
+<p><button type="button" class="gene-link" data-consequence="unresolved" aria-controls="gene-table" {'disabled' if not unresolved else ''}>View all unpaired relationships</button></p></section>
 {_description_panel(gene)}
-<section class="gene-section" id="gene-evidence" aria-labelledby="gene-evidence-title"><h2 id="gene-evidence-title"><span>4</span>Evidence</h2>
+<section class="gene-section" id="gene-evidence" aria-labelledby="gene-evidence-title"><h2 id="gene-evidence-title"><span>5</span>Evidence</h2>
 <p class="gene-muted">All {len(gene["relationships"]):,} relationships. Select <b>Inspect</b> for coordinates, translations and alignment.</p>
 <div class="gene-controls"><label>View <select id="gene-view"><option value="review">Differences / needs review</option><option value="all">All relationships</option></select></label><label>Protein evidence <select id="gene-consequence"><option value="">All relationships</option>{consequence_options}<option value="changed">Any interpretable protein difference</option><option value="unresolved">Unresolved correspondence</option></select></label>
 <label>Product labels <select id="gene-product-status"><option value="">All label combinations</option>{product_options}</select></label>
@@ -372,14 +418,16 @@ def render_gene_report(summary: dict) -> str:
 <noscript><p>JavaScript is required for the interactive table; the <a href="tables/gene_comparisons.tsv">TSV</a> and <a href="comparison.json">JSON</a> contain every relationship.</p></noscript>
 <div class="table-wrap"><table id="gene-table" aria-label="Complete CDS relationships"></table></div>
 <section id="gene-detail" class="gene-detail" aria-live="polite"><h3>Gene evidence</h3><p>Select a relationship to inspect its two annotation models.</p></section></section>
-<section class="gene-section" id="gene-methods" aria-labelledby="gene-methods-title"><h2 id="gene-methods-title"><span>5</span>Methods</h2>
+<section class="gene-section" id="gene-methods" aria-labelledby="gene-methods-title"><h2 id="gene-methods-title"><span>6</span>Methods</h2>
 <dl class="gene-methods"><dt>Coordinates</dt><dd>GFF3 positions are 1-based inclusive. Deltas are B minus A: protein length in amino acids; boundary shifts in bp, positive downstream.</dd>
-<dt>Pairing</dt><dd>CDS models are matched by structure, strand and frame, not names. Exact structures are paired first, then unique start/stop alternatives; other overlaps stay candidate or ambiguous.</dd>
-<dt>Structural agreement</dt><dd>2 × {gene["exact_model_count"]:,} shared models / {total_models:,} CDS models across both sources.</dd>
-{definitions}
+<dt>Pairing</dt><dd>CDS models are matched by structure, strand and frame, not names. Exact structures are paired first, then unique start/stop alternatives; other overlaps are not paired.</dd>
+<dt>Model outcomes</dt><dd>Each model is counted once in its own annotation, by its most similar relationship (Table 1 order).</dd>{outcome_definitions}
+{protein_definitions}
 <dt>Product labels</dt><dd>Missing (absent or blank), explicit hypothetical (contains “hypothetical protein”) or other text, compared only for identical proteins. Other text does not establish a known function.</dd>
-<dt>Limitations</dt><dd>A descriptive comparison of two annotations. It does not identify the correct model, gene absence, mutations or functional effects.</dd></dl>
-<details class="gene-fineprint"><summary>Full method notes</summary><p>{escape(gene["consequence_methods"])}</p><p>{escape(description["methods"])}</p><p>{escape(gene["scope"])}</p>{f"<p>{escape(context['methods'])}</p>" if context is not None else ""}</details>
+<dt>Relationship rows</dt><dd>{len(gene["relationships"]):,} rows: {matched:,} accepted, {status.get("unmatched", 0):,} unmatched, {status.get("candidate", 0):,} candidate and {status.get("ambiguous", 0):,} ambiguous ({ambiguous_groups:,} ambiguous overlap groups); {unresolved:,} unresolved relationship rows. One model can appear in several rows.</dd>
+<dt>Structural agreement</dt><dd>{exact}: 2 × {gene["exact_model_count"]:,} shared models / {sum(totals):,} CDS models across both sources.</dd>
+<dt>Limitations</dt><dd>A descriptive comparison of two annotations. It does not identify the correct model, gene gain or loss, mutations or functional effects.</dd></dl>
+<details class="gene-fineprint"><summary>Full method notes</summary><p>{escape(gene["model_outcomes"]["methods"])}</p><p>{escape(gene["consequence_methods"])}</p><p>{escape(description["methods"])}</p><p>{escape(gene["scope"])}</p>{f"<p>{escape(context['methods'])}</p>" if context is not None else ""}</details>
 <p class="downloads"><a href="comparison.txt">Summary (TXT)</a><a href="tables/gene_comparisons.tsv">All relationships (TSV)</a><a href="tables/gene_product_status.tsv">Product labels (TSV)</a><a href="plots/gene_consequences.svg">Consequence figure (SVG)</a></p>
 <details class="gene-fineprint"><summary>Bundled table-library license</summary><p>DataTables 3.1.4, locally bundled; no network access.</p><pre class="gene-license">{license_text}</pre></details>
 </section></section><script id="gene-data" type="application/json">{payload}</script><script id="gene-loci" type="application/json">{locus_payload}</script><script>{scripts}</script>'''
@@ -397,6 +445,11 @@ def gene_text_report(summary: dict) -> str:
              f"A: {labels[0]}", f"B: {labels[1]}",
              "Scope: two annotations of identical DNA; genomic coordinates 1-based inclusive.",
              f"Accepted one-to-one CDS pairs: {matched:,}"]
+    outcomes = gene.get("model_outcomes")
+    if outcomes:
+        lines.append("CDS model outcomes (each model counted once; A / B):")
+        lines += [f"{title}: " + " / ".join(f"{counts[key]:,}" for counts in outcomes["counts"].values())
+                  for key, title in outcomes["labels"].items()]
     lines += [f"{label}: {gene['consequence_counts'].get(key, 0):,} / {matched:,} accepted pairs" for key, label in CONSEQUENCE_LABELS.items()]
     lines += [f"Exact structural agreement: {exact}; {gene['exact_model_count']:,} shared models (multiplicity included).",
               "Unmatched CDS calls: " + "; ".join(f"{label}: {count:,}" for label, count in gene["unmatched_cds_counts"].items()),

@@ -65,7 +65,7 @@ class DescriptionSummaryTests(unittest.TestCase):
         summary = run_comparison(inputs, out, gene_level=True)
         gene = summary["gene_level_comparison"]
         description = gene["description_summary"]
-        self.assertEqual(gene["schema_version"], "1.6")
+        self.assertEqual(gene["schema_version"], "1.7")
         self.assertEqual(description["identical_protein_pairs"], 10)
         self.assertEqual(description["product_text_difference_pairs"], 7)
         self.assertEqual(description["unresolved_cds_counts"], {"SourceA": 0, "SourceB": 0})
