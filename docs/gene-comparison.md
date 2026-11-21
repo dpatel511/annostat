@@ -28,7 +28,8 @@ proteins are retained for matching and consequence calculations, not CDS DNA.
 All reported coordinates are **1-based inclusive**. Multipart CDSs count once,
 and circular-origin blocks retain their biological order. Positive boundary
 deltas point downstream in the CDS strand direction; circular deltas are only
-reported for exact matches or supported boundary alternatives. Names and locus
+reported for exact matches, supported boundary alternatives and overlaps that share
+both biological ends (0 bp). Names and locus
 tags do not establish correspondence. A counterpart must overlap on the same
 sequence and strand. Exact models anchor matching, followed by unique,
 frame-compatible boundary alternatives. Other overlaps remain candidates or

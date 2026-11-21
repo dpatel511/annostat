@@ -19,6 +19,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and checks pseudogene proteins that a source FAA lists without a GenBank
   translation.
 
+### Fixed
+
+- Classify CDS models on circular sequences that share both biological ends with
+  a differently spliced counterpart as `internal_change` rather than
+  `partial_overlap`. Such overlaps now report 0 bp start and stop deltas; other
+  circular non-boundary overlaps keep unavailable deltas.
+
 ## [1.3.0] - 2026-11-20
 
 ### Fixed

@@ -376,7 +376,9 @@ def _row(left: CdsModel | None, right: CdsModel | None, labels: tuple[str, str],
         if not (left.circular or right.circular):
             start_delta = direction * (right.start - left.start)
             stop_delta = direction * (right.stop - left.stop)
-        elif relationship == "exact":
+        elif relationship == "exact" or (
+                (right.start - left.start) % left.sequence_length == 0 and (right.stop - left.stop) % left.sequence_length == 0):
+            # Shared biological ends need no wrap direction; other circular offsets stay unavailable.
             start_delta = stop_delta = 0
         elif relationship in {"start_shift", "stop_shift"}:
             at_start = relationship == "start_shift"

@@ -269,8 +269,10 @@ def check_pair(gene, a, b):
                     downstream = len(mb['path']) < len(ma['path']) if index == 0 else len(mb['path']) > len(ma['path'])
                     delta[index] = delta[index] % ma['genome_length'] if downstream else -((-delta[index]) % ma['genome_length'])
                     delta[1-index] = 0
-                else:
+                elif ma['path'][0] != mb['path'][0] or ma['path'][-1] != mb['path'][-1]:
                     delta = [None,None]
+                else:
+                    delta = [0,0]
             check([row['start_delta_bp'],row['stop_delta_bp']] == delta, 'source-derived boundary offsets differ')
         if row['status'] != 'matched':
             check(row['protein_consequence'] == 'unresolved' and row['alignment_identity_percent'] is None,
