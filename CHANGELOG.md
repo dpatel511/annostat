@@ -6,6 +6,19 @@ and command-line executable retain the lowercase technical name `annostat`.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- A current-version public audit (`examples/annotation-audit-2026-11-manifest.json`):
+  RefSeq records as served on 2026-11-21, Bakta 1.1 and Bakta 1.12.2 (database
+  6.0) on the five panel assemblies, with each record's annotation pipeline/date.
+  The panel preparer and checker accept `--manifest`, and the preparer accepts
+  locally supplied outputs. The independent oracle now also recomputes CDS row
+  counts, per-CDS genetic-code counts, recognized starts and per-model outcomes,
+  and checks pseudogene proteins that a source FAA lists without a GenBank
+  translation.
+
 ## [1.3.0] - 2026-11-20
 
 ### Fixed

@@ -58,12 +58,16 @@ def download(info, path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--manifest', type=Path, default=Path(__file__).with_name('annotation-panel-manifest.json'))
+    parser.add_argument('--supplied', type=Path, help='directory of <accession>/ outputs for tools marked "supplied"')
     args = parser.parse_args()
-    manifest_path = Path(__file__).with_name('annotation-panel-manifest.json')
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(args.manifest.read_text())
     root = args.output.resolve()
-    if pyrodigal.__version__ != '3.7.1':
+    tools_used = {label for case in manifest['cases'] for label in case['tools']}
+    if 'Pyrodigal' in tools_used and pyrodigal.__version__ != '3.7.1':
         parser.error('this frozen panel requires test-only pyrodigal==3.7.1')
+    if any('supplied' in tool for case in manifest['cases'] for tool in case['tools'].values()) and not args.supplied:
+        parser.error('--supplied is required for this manifest')
     for case in manifest['cases']:
         for info in case['downloads']:
             path = root/info['path']
@@ -78,12 +82,17 @@ def main():
                 members = [m for m in package.getmembers() if m.isfile() and Path(m.name).name == acc+'.'+extension]
                 if len(members) != 1:
                     raise ValueError('archive member not unique: '+acc+'.'+extension)
-                path = root/tools['Bakta'][key]
+                path = root/tools[case.get('archive_tool', 'Bakta')][key]
                 path.parent.mkdir(parents=True, exist_ok=True)
                 with package.extractfile(members[0]) as source, path.open('wb') as out:
                     shutil.copyfileobj(source, out)
+        for label, tool in tools.items():
+            for kind, name in tool.get('supplied', {}).items():
+                path = root/tool[kind]
+                path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(args.supplied/acc/name, path)
         canonical = fingerprints(root/tools['RefSeq']['fasta'])
-        if canonical != case['sequences'] or fingerprints(root/tools['Bakta']['fasta']) != canonical:
+        if canonical != case['sequences'] or any(fingerprints(root/tool['fasta']) != canonical for tool in tools.values()):
             raise ValueError('assembly sequence mismatch: '+acc)
         if 'Prokka' in tools:
             source = tools['Prokka']
@@ -107,18 +116,19 @@ def main():
                         fields[0] = mapping[fields[0]]
                         line = '\t'.join(fields)+'\n'
                     out.write(line)
-        source = tools['Pyrodigal']
-        finder = pyrodigal.GeneFinder(meta=False, closed=False)
-        records = list(SeqIO.parse(root/source['fasta'], 'fasta'))  # Confirmed small panel: <=13.1 Mb per assembly.
-        finder.train(*(bytes(r.seq) for r in records), translation_table=11)
-        for key in ('gff', 'faa', 'gbff'):
-            (root/source[key]).parent.mkdir(parents=True, exist_ok=True)
-        with (root/source['gff']).open('w') as gff, (root/source['faa']).open('w') as aa, (root/source['gbff']).open('w') as gb:
-            for i, record in enumerate(records):
-                genes = finder.find_genes(bytes(record.seq))
-                genes.write_gff(gff, record.id, header=i == 0, include_translation_table=True, full_id=True)
-                genes.write_translations(aa, record.id, full_id=True)
-                genes.write_genbank(gb, record.id, date=datetime.date.fromisoformat(manifest['prediction_date']))
+        source = tools.get('Pyrodigal')
+        if source is not None:
+            finder = pyrodigal.GeneFinder(meta=False, closed=False)
+            records = list(SeqIO.parse(root/source['fasta'], 'fasta'))  # Confirmed small panel: <=13.1 Mb per assembly.
+            finder.train(*(bytes(r.seq) for r in records), translation_table=11)
+            for key in ('gff', 'faa', 'gbff'):
+                (root/source[key]).parent.mkdir(parents=True, exist_ok=True)
+            with (root/source['gff']).open('w') as gff, (root/source['faa']).open('w') as aa, (root/source['gbff']).open('w') as gb:
+                for i, record in enumerate(records):
+                    genes = finder.find_genes(bytes(record.seq))
+                    genes.write_gff(gff, record.id, header=i == 0, include_translation_table=True, full_id=True)
+                    genes.write_translations(aa, record.id, full_id=True)
+                    genes.write_genbank(gb, record.id, date=datetime.date.fromisoformat(manifest['prediction_date']))
         for label, source in tools.items():
             for kind, digest in source['sha256'].items():
                 if sha(root/source[kind]) != digest:

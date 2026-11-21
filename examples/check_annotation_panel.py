@@ -145,11 +145,13 @@ def main():
     parser.add_argument('--inputs', type=Path, required=True, help='prepared panel directory containing input-manifest.json')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--check-only', action='store_true', help='audit existing outputs without rerunning CLI commands')
+    parser.add_argument('--manifest', type=Path, default=Path(__file__).with_name('annotation-panel-manifest.json'),
+                        help='repository manifest the prepared inputs must equal')
     args = parser.parse_args()
     root, output = args.inputs.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     manifest = json_file(root/'input-manifest.json')
-    check(manifest == json_file(Path(__file__).with_name('annotation-panel-manifest.json')), 'prepared panel manifest differs from the frozen repository manifest')
+    check(manifest == json_file(args.manifest), 'prepared panel manifest differs from the repository manifest')
     runs, findings, comparisons, analyses = [], [], [], []
     log_lock = Lock()
     environment = subprocess.run([sys.executable, '-c', 'import annostat,sys; print(sys.version); print(annostat.__version__); print(annostat.__file__)'], capture_output=True, text=True, check=True).stdout
