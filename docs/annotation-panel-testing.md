@@ -188,8 +188,9 @@ passed 217 report and figure checks.
 Limits: all inputs are complete table-11 assemblies; tables 4/25, fragmented
 drafts and fungal annotations are not covered. No public pair contains an
 identical duplicate structure or a same-ends internal change, so those outcomes
-rest on unit tests. A constructed circular case shows that 1.3.0 classes a
-same-ends internal change on a circular sequence as a partial overlap.
+rest on unit tests. A constructed circular case showed that 1.3.0 classed a
+same-ends internal change on a circular sequence as a partial overlap; this is
+fixed after 1.3.0.
 
 ## Spliced fungal (table 1) checks
 

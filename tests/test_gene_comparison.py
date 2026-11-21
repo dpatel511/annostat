@@ -202,6 +202,21 @@ class GeneComparisonTests(unittest.TestCase):
         self.assertEqual(result["exact_agreement"], 0)
         self.assertEqual(result["relationships"][0]["overlap_bp"], 300)
 
+    def test_same_ends_internal_change_on_circular_and_linear_sequences(self):
+        # 1-based inclusive: both models span 1..90 on the same frame but splice differently.
+        for circular in ("true", "false"):
+            for strand in ("+", "-"):
+                with self.subTest(circular=circular, strand=strand):
+                    region = f"chr\ttest\tregion\t1\t300\t.\t+\t.\tID=chr;Is_circular={circular}"
+                    a = self.dataset("A", [region, self.cds("a", 1, 30, strand), self.cds("a", 46, 90, strand)])
+                    b = self.dataset("B", [region, self.cds("b", 1, 45, strand), self.cds("b", 61, 90, strand)])
+                    result = self.compare(a, b)["gene_level_comparison"]
+                    row = result["relationships"][0]
+                    self.assertEqual(row["relationship"], "overlap")
+                    self.assertEqual((row["start_delta_bp"], row["stop_delta_bp"]), (0, 0))
+                    for label in ("A", "B"):
+                        self.assertEqual(result["model_outcomes"]["counts"][label]["internal_change"], 1)
+
     def test_empty_cds_sets_write_headers_and_have_no_agreement_denominator(self):
         a = self.dataset("A", [])
         b = self.dataset("B", [])
