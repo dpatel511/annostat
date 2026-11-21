@@ -114,6 +114,9 @@ def load_models(root, source):
             if aa and complete and coding[:3] in table.start_codons:
                 aa[0] = 'M'
             protein = ''.join(aa).removesuffix('*')
+            if locus in published:  # Bakta >=1.12 lists pseudogene proteins in its FAA only.
+                check(published[locus].removesuffix('*') == protein, 'source FAA/computed pseudogene protein mismatch: ' + locus)
+                published_ids.add(locus)
         positions = path[phase:phase+3*len(protein)]+1
         codons = [tuple(map(int, x)) for x in positions.reshape((-1, 3))]
         result[identifier] = dict(seqid=first.seqid, strand=strand, phase=phase,
@@ -125,6 +128,60 @@ def load_models(root, source):
     check(used == set(reference), 'unused GenBank CDS records')
     check(published_ids == set(published), 'unused published FAA records')
     return result, rows, len(published_ids)
+
+
+def product_status(model):
+    product = attr(model['attrs'], 'product')
+    if product is None or not product.strip():
+        return 'missing'
+    return 'explicit_hypothetical' if 'hypothetical protein' in product.lower() else 'other_product_text'
+
+
+# Documented order: accepted pairs, then unpaired overlaps from most to least similar, then no overlap.
+OUTCOMES = ('unchanged', 'start_changed', 'stop_changed', 'duplicate_structure', 'boundary_alternative',
+            'internal_change', 'partial_overlap', 'frame_disagreement', 'no_overlap')
+
+
+def expected_outcomes(a, b, expected, links):
+    """Each model's most similar relationship, from the independent graph and genomic paths."""
+    best = [{}, {}]
+    for (i, j), status in expected.items():
+        if status == 'unmatched':
+            outcome = 'no_overlap'
+        else:
+            kind = links[i, j][0]
+            if status == 'matched':
+                outcome = {'exact': 'unchanged', 'start_shift': 'start_changed', 'stop_shift': 'stop_changed'}[kind]
+            elif kind in {'exact', 'frame_disagreement'}:
+                outcome = 'duplicate_structure' if kind == 'exact' else kind
+            elif kind in {'start_shift', 'stop_shift'}:
+                outcome = 'boundary_alternative'
+            else:
+                pa, pb = a[i]['path'], b[j]['path']
+                outcome = 'internal_change' if pa[0] == pb[0] and pa[-1] == pb[-1] else 'partial_overlap'
+        for side, key in enumerate((i, j)):
+            if key is not None and (key not in best[side] or OUTCOMES.index(outcome) < OUTCOMES.index(best[side][key])):
+                best[side][key] = outcome
+    return best
+
+
+def check_outcomes(gene, a, b, expected, links):
+    document = gene['model_outcomes']
+    labels = list(gene['cds_counts'])
+    check(tuple(document['labels']) == OUTCOMES, 'model outcome labels/order differ')
+    for label, models, best in zip(labels, (a, b), expected_outcomes(a, b, expected, links)):
+        check(set(best) == set(models), 'model outcome coverage differs: ' + label)
+        tally = Counter(best.values())
+        check(document['counts'][label] == {key: tally[key] for key in OUTCOMES}, 'model outcome counts differ: ' + label)
+        for group, members in (('no_overlap', {'no_overlap'}), ('paired', {'unchanged', 'start_changed', 'stop_changed'})):
+            selected = [models[k] for k, outcome in best.items() if outcome in members]
+            profile = document['profiles'][label][group]
+            lengths = [len(m['protein']) for m in selected]
+            hypothetical = sum(product_status(m) == 'explicit_hypothetical' for m in selected)
+            check(profile['models'] == len(selected), 'outcome profile size differs: ' + group)
+            for key, value in (('median_protein_length_aa', median(lengths) if lengths else None),
+                               ('explicit_hypothetical_percent', 100*hypothetical/len(selected) if selected else None)):
+                check(profile[key] == value if value is None else math.isclose(profile[key], value), f'outcome profile differs: {group}/{key}')
 
 
 def relation(a, b):
@@ -266,6 +323,7 @@ def check_pair(gene, a, b):
     check(gene['status_counts'] == dict(Counter(r['status'] for r in rows)), 'status totals differ')
     check(gene['relationship_counts'] == dict(Counter(r['relationship'] for r in rows)), 'relationship totals differ')
     check(gene['consequence_counts'] == dict(Counter(r['protein_consequence'] for r in rows if r['status'] == 'matched')), 'consequence totals differ')
+    check_outcomes(gene, a, b, expected, links)
 
 
 def check_descriptions(folder, gene, a, b):
@@ -287,17 +345,11 @@ def check_descriptions(folder, gene, a, b):
         if reliable:
             identical.append((i, j))
 
-    def status(model):
-        product = attr(model['attrs'], 'product')
-        if product is None or not product.strip():
-            return 'missing'
-        return 'explicit_hypothetical' if 'hypothetical protein' in product.lower() else 'other_product_text'
-
     for row in rows:
         for side, models in [('a', a), ('b', b)]:
             model = models.get(row['id_'+side])
-            check(row['product_status_'+side] == (status(model) if model else None), 'source product-status field differs')
-    matrix = Counter((status(a[i]), status(b[j])) for i, j in identical)
+            check(row['product_status_'+side] == (product_status(model) if model else None), 'source product-status field differs')
+    matrix = Counter((product_status(a[i]), product_status(b[j])) for i, j in identical)
     description = gene['description_summary']
     total = len(identical)
     check(description['accepted_pairs'] == len(accepted), 'description accepted denominator differs')
@@ -355,6 +407,10 @@ def check_analysis(folder, models, rows, genome):
     gc = 100*(bases['G']+bases['C'])/sum(bases[x] for x in 'ACGT')
     covered = sum(len(np.unique(np.concatenate([m['physical'] for m in models.values() if m['seqid'] == sid]))) for sid in genome)
     check(summary['cds_count'] == len(models) and summary['genome_length'] == length, 'CDS/genome count differs')
+    check(summary['cds_row_count'] == sum(r.featuretype == 'CDS' for r in rows), 'CDS row count differs')
+    check(summary['genetic_code_counts'] == {str(k): v for k, v in Counter(m['code'] for m in models.values()).items()}, 'per-CDS genetic-code counts differ')
+    check(summary['recognized_start_count'] == sum(m['coding'][:3] in CodonTable.unambiguous_dna_by_id[m['code']].start_codons
+                                                   for m in models.values() if len(m['coding']) >= 3), 'recognized start count differs')
     check(math.isclose(summary['quality_control']['genome_gc_percent'], gc), 'GC differs')
     check(math.isclose(summary['quality_control']['coding_density_percent'], 100*covered/length), 'union coding density differs')
     seen, types = set(), Counter()

@@ -58,9 +58,12 @@ CDS overlaps independently, and checks accepted/candidate/ambiguous/unmatched
 correspondence. Both directions are checked for signed deltas and codon-mapped
 residue counts. GC, union coding density, feature/RNA/COG counts, codon usage,
 aggregate profiles, text denominators, HTML evidence, TSV fields, group membership,
-cohort joins and exported SVG geometry/labels are cross-checked.
+cohort joins and exported SVG geometry/labels are cross-checked. CDS row counts,
+per-CDS genetic-code counts, recognized start codons and per-model outcomes are
+recomputed from the source records and the oracle's own correspondence graph.
 Pseudogene models without a published translation have computed-only reference
-proteins and are counted separately. Pyrodigal's short-record GenBank LOCUS lines
+proteins and are counted separately; when a source FAA lists such a protein
+(Bakta 1.12), the computed protein must equal it. Pyrodigal's short-record GenBank LOCUS lines
 may produce Biopython warnings; explicit sequence, coordinate and ID joins remain
 mandatory. No warning is suppressed to declare success.
 
@@ -145,6 +148,48 @@ database or new genome data was downloaded. These are computational/source
 consistency checks, not experimental biological validation or a ranking of
 current annotation-tool releases. Exact logs, source hashes, original failure
 and final wheel checks remain under the ignored audit directory.
+
+## Current-version audit (2026-11)
+
+`examples/annotation-audit-2026-11-manifest.json` pins a second panel on the same
+five assemblies with three annotations each: the RefSeq records NCBI served on
+2026-11-21, the Bakta 1.1 examples above and Bakta 1.12.2 (database 6.0, full).
+It does not replace the frozen panel. Each RefSeq version is read from its record:
+
+| Assembly | RefSeq annotation |
+| --- | --- |
+| GCF_000009045.1 | no PGAP annotation comment |
+| GCF_000829055.1 | PGAP 6.10, 2026-03-30 |
+| GCF_000817005.1 | PGAP 6.3, 2022-11-11 |
+| GCF_000013425.1 | no PGAP annotation comment |
+| GCF_000067165.1 | PGAP 6.10, 2026-03-31; 109 product and 38 inference values changed since the frozen snapshot with no coordinate or date change |
+
+Bakta 1.12.2 was run through the [Bakta Web](https://bakta.computational.bio) API
+(Bakta 1.12.2, database 6.0, backend 1.1.0) on each RefSeq genomic FASTA with a
+complete genome, original contig headers, table 11 and the genus/species/strain
+recorded in the manifest. Each result records its Bakta and database versions in
+its JSON and GFF3 header. Bakta Web deletes jobs after 30 days and the outputs are
+not deposited, so the manifest pins them by hash; a new run may not reproduce
+identical bytes and then needs a reviewed new manifest. Supply the outputs as
+`<accession>/bakta.{fna,gff3,gbff,faa}`:
+
+```bash
+python examples/prepare_annotation_panel.py --manifest examples/annotation-audit-2026-11-manifest.json   --supplied path/to/bakta-outputs --output tmp/current-audit
+python examples/check_annotation_panel.py --manifest examples/annotation-audit-2026-11-manifest.json   --inputs tmp/current-audit --output tmp/current-audit/results
+```
+
+The 2026-11-21 run with Annostat 1.3.0 (WSL, Python 3.10) passed **15 analyses**
+and **15 pairs in both directions**, cross-checking **64,430 published source
+proteins** with 641 computed-only pseudogene models. Bakta 1.1 and 1.12.2 have
+identical structures and proteins for every accepted pair. Seven corrupted
+outputs, one per new oracle check, were rejected. The offline browser audit
+passed 217 report and figure checks.
+
+Limits: all inputs are complete table-11 assemblies; tables 4/25, fragmented
+drafts and fungal annotations are not covered. No public pair contains an
+identical duplicate structure or a same-ends internal change, so those outcomes
+rest on unit tests. A constructed circular case shows that 1.3.0 classes a
+same-ends internal change on a circular sequence as a partial overlap.
 
 ## Spliced fungal (table 1) checks
 
