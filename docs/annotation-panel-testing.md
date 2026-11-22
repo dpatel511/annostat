@@ -151,42 +151,61 @@ and final wheel checks remain under the ignored audit directory.
 
 ## Current-version audit (2026-11)
 
-`examples/annotation-audit-2026-11-manifest.json` pins a second panel on the same
-five assemblies with three annotations each: the RefSeq records NCBI served on
-2026-11-21, the Bakta 1.1 examples above and Bakta 1.12.2 (database 6.0, full).
-It does not replace the frozen panel. Each RefSeq version is read from its record:
+`examples/annotation-audit-2026-11-manifest.json` pins a second panel of eight
+NCBI reference assemblies. The five panel assemblies have three annotations each:
+the RefSeq records NCBI served on 2026-11-21, the Bakta 1.1 examples above and
+Bakta 1.12.2 (database 6.0, full). Three assemblies added on 2026-11-22 cover NCBI
+table 4 and draft assemblies with RefSeq and Bakta 1.12.2. It does not replace the
+frozen panel. Each RefSeq version is read from its record:
 
-| Assembly | RefSeq annotation |
-| --- | --- |
-| GCF_000009045.1 | no PGAP annotation comment |
-| GCF_000829055.1 | PGAP 6.10, 2026-03-30 |
-| GCF_000817005.1 | PGAP 6.3, 2022-11-11 |
-| GCF_000013425.1 | no PGAP annotation comment |
-| GCF_000067165.1 | PGAP 6.10, 2026-03-31; 109 product and 38 inference values changed since the frozen snapshot with no coordinate or date change |
+| Assembly | Coverage | RefSeq annotation |
+| --- | --- | --- |
+| GCF_000009045.1 | complete, table 11 | no PGAP annotation comment |
+| GCF_000829055.1 | complete, table 11 | PGAP 6.10, 2026-03-30 |
+| GCF_000817005.1 | complete, table 11 | PGAP 6.3, 2022-11-11 |
+| GCF_000013425.1 | complete, table 11 | no PGAP annotation comment |
+| GCF_000067165.1 | complete, table 11 | PGAP 6.10, 2026-03-31; 109 product and 38 inference values changed since the frozen snapshot with no coordinate or date change |
+| GCF_040556925.1 (*Mycoplasmoides genitalium* G37) | complete, table 4 | PGAP 6.9, 2025-03-31 |
+| GCF_025234795.1 (*Exiguobacterium mexicanum*) | draft, 135 contigs | PGAP 6.11, 2026-08-03 |
+| GCF_006539825.1 (*Corynebacterium variabile*) | draft, 68 contigs | PGAP 6.11, 2026-09-10 |
 
 Bakta 1.12.2 was run through the [Bakta Web](https://bakta.computational.bio) API
-(Bakta 1.12.2, database 6.0, backend 1.1.0) on each RefSeq genomic FASTA with a
-complete genome, original contig headers, table 11 and the genus/species/strain
-recorded in the manifest. Each result records its Bakta and database versions in
-its JSON and GFF3 header. Bakta Web deletes jobs after 30 days and the outputs are
-not deposited, so the manifest pins them by hash; a new run may not reproduce
+(Bakta 1.12.2, database 6.0, backend 1.1.0) on each RefSeq genomic FASTA with
+original contig headers, the assembly's table and the genus/species/strain recorded
+in the manifest; only complete assemblies were submitted as complete genomes. Each
+result records its Bakta and database versions in its JSON and GFF3 header. Bakta
+1.12.2 GFF3 declares no `transl_table` (its GenBank file does), so the manifest
+records table 4 for that annotation and the checker passes it as `--genetic-code`.
+Without it, Annostat translates the *M. genitalium* Bakta models with table 11:
+372 of 522 proteins contain internal stops, reported as QC warnings, and the
+checker rejects the exports. Bakta Web deletes jobs after 30 days and the outputs
+are not deposited, so the manifest pins them by hash; a new run may not reproduce
 identical bytes and then needs a reviewed new manifest. Supply the outputs as
 `<accession>/bakta.{fna,gff3,gbff,faa}`:
 
 ```bash
-python examples/prepare_annotation_panel.py --manifest examples/annotation-audit-2026-11-manifest.json   --supplied path/to/bakta-outputs --output tmp/current-audit
-python examples/check_annotation_panel.py --manifest examples/annotation-audit-2026-11-manifest.json   --inputs tmp/current-audit --output tmp/current-audit/results
+python examples/prepare_annotation_panel.py --manifest examples/annotation-audit-2026-11-manifest.json \
+  --supplied path/to/bakta-outputs --output tmp/current-audit
+python examples/check_annotation_panel.py --manifest examples/annotation-audit-2026-11-manifest.json \
+  --inputs tmp/current-audit --output tmp/current-audit/results
 ```
 
-The 2026-11-21 run with Annostat 1.3.0 (WSL, Python 3.10) passed **15 analyses**
-and **15 pairs in both directions**, cross-checking **64,430 published source
-proteins** with 641 computed-only pseudogene models. Bakta 1.1 and 1.12.2 have
-identical structures and proteins for every accepted pair. Seven corrupted
-outputs, one per new oracle check, were rejected. The offline browser audit
-passed 217 report and figure checks.
+NCBI translates an unambiguous incomplete final codon of a 3'-partial CDS; Annostat
+excludes incomplete trailing bases. The oracle therefore compares such models
+without that one residue (18 RefSeq CDSs in the two drafts, counted per source as
+`partial_final_codon_residues`) after checking the GenBank translation against the
+FAA unchanged.
 
-Limits: all inputs are complete table-11 assemblies; tables 4/25, fragmented
-drafts and fungal annotations are not covered. No public pair contains an
+The 2026-11-22 run with Annostat 1.3.0 plus the circular-outcome fix (WSL, Python
+3.10) passed **21 analyses** and **18 pairs in both directions**, cross-checking
+**77,336 published source proteins** with 738 computed-only pseudogene models.
+Bakta 1.1 and 1.12.2 have identical structures and proteins for every accepted
+pair. Seven corrupted outputs, one per new oracle check, and the table-4 case
+without its recorded table were rejected. The offline browser audit passed 277
+report and figure checks.
+
+Limits: table 4 rests on one small genome and drafts on two PGAP 6.11 references;
+table 25 and fungal annotations are not covered. No public pair contains an
 identical duplicate structure or a same-ends internal change, so those outcomes
 rest on unit tests. A constructed circular case showed that 1.3.0 classed a
 same-ends internal change on a circular sequence as a partial overlap; this is

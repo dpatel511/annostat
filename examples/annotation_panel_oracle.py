@@ -15,6 +15,7 @@ import gffutils
 import numpy as np
 from Bio import SeqIO
 from Bio.Data import CodonTable
+from Bio.SeqFeature import AfterPosition, BeforePosition
 
 ATTRS = ('gene', 'product', 'Dbxref', 'pseudo', 'pseudogene', 'partial',
          'start_range', 'end_range', 'transl_except', 'exception')
@@ -106,7 +107,14 @@ def load_models(root, source):
             check(protein_id in published and published[protein_id].removesuffix('*') == protein,
                   'source FAA/GenBank protein mismatch: ' + protein_id)
             published_ids.add(protein_id)
+            # NCBI translates an unambiguous incomplete final codon of a 3'-partial CDS; Annostat does not.
+            three_prime = feature.location.end if strand == '+' else feature.location.start
+            trimmed = (len(coding) % 3 and len(protein) == len(coding)//3+1 and
+                       isinstance(three_prime, (AfterPosition, BeforePosition)))
+            if trimmed:
+                protein = protein[:-1]
         else:
+            trimmed = False
             check('pseudo' in feature.qualifiers or 'pseudogene' in feature.qualifiers,
                   'missing source translation without pseudogene context')
             aa = [table.forward_table.get(c, '*' if c in table.stop_codons else 'X')
@@ -122,7 +130,7 @@ def load_models(root, source):
         result[identifier] = dict(seqid=first.seqid, strand=strand, phase=phase,
             path=path, physical=np.unique(path), lo=int(path.min()), hi=int(path.max()),
             signature=(first.seqid, strand, phase, path.tobytes()),
-            nt=nt, coding=coding, protein=protein, code=code, attrs=attrs, codons=codons,
+            nt=nt, coding=coding, protein=protein, code=code, attrs=attrs, codons=codons, trimmed_partial_codon=trimmed,
             initiator=table.forward_table.get(coding[:3]) if complete and coding[:3] in table.start_codons else None,
             circular=first.seqid in circular, genome_length=len(record))
     check(used == set(reference), 'unused GenBank CDS records')
@@ -407,7 +415,8 @@ def check_analysis(folder, models, rows, genome):
     length = sum(map(len, genome.values()))
     bases = Counter(''.join(genome.values()))
     gc = 100*(bases['G']+bases['C'])/sum(bases[x] for x in 'ACGT')
-    covered = sum(len(np.unique(np.concatenate([m['physical'] for m in models.values() if m['seqid'] == sid]))) for sid in genome)
+    covered = sum(len(np.unique(np.concatenate(parts))) for sid in genome  # Draft contigs may carry no CDS.
+                  if (parts := [m['physical'] for m in models.values() if m['seqid'] == sid]))
     check(summary['cds_count'] == len(models) and summary['genome_length'] == length, 'CDS/genome count differs')
     check(summary['cds_row_count'] == sum(r.featuretype == 'CDS' for r in rows), 'CDS row count differs')
     check(summary['genetic_code_counts'] == {str(k): v for k, v in Counter(m['code'] for m in models.values()).items()}, 'per-CDS genetic-code counts differ')
