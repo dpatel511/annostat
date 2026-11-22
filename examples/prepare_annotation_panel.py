@@ -76,16 +76,17 @@ def main():
                 with gzip.open(path, 'rb') as source, path.with_suffix('').open('wb') as out:
                     shutil.copyfileobj(source, out)
         acc, tools = case['accession'], case['tools']
-        archive = next(root/x['path'] for x in case['downloads'] if x['path'].endswith('.tar.gz'))
-        with tarfile.open(archive) as package:
-            for extension, key in [('fna', 'fasta'), ('gff3', 'gff'), ('gbff', 'gbff'), ('faa', 'faa')]:
-                members = [m for m in package.getmembers() if m.isfile() and Path(m.name).name == acc+'.'+extension]
-                if len(members) != 1:
-                    raise ValueError('archive member not unique: '+acc+'.'+extension)
-                path = root/tools[case.get('archive_tool', 'Bakta')][key]
-                path.parent.mkdir(parents=True, exist_ok=True)
-                with package.extractfile(members[0]) as source, path.open('wb') as out:
-                    shutil.copyfileobj(source, out)
+        archives = [root/x['path'] for x in case['downloads'] if x['path'].endswith('.tar.gz')]
+        for archive in archives:  # Published Bakta benchmark examples, when the case uses them.
+            with tarfile.open(archive) as package:
+                for extension, key in [('fna', 'fasta'), ('gff3', 'gff'), ('gbff', 'gbff'), ('faa', 'faa')]:
+                    members = [m for m in package.getmembers() if m.isfile() and Path(m.name).name == acc+'.'+extension]
+                    if len(members) != 1:
+                        raise ValueError('archive member not unique: '+acc+'.'+extension)
+                    path = root/tools[case.get('archive_tool', 'Bakta')][key]
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    with package.extractfile(members[0]) as source, path.open('wb') as out:
+                        shutil.copyfileobj(source, out)
         for label, tool in tools.items():
             for kind, name in tool.get('supplied', {}).items():
                 path = root/tool[kind]

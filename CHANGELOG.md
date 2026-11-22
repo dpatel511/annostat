@@ -18,6 +18,12 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   counts, per-CDS genetic-code counts, recognized starts and per-model outcomes,
   and checks pseudogene proteins that a source FAA lists without a GenBank
   translation.
+- Extend the current-version audit with NCBI table 4 (*Mycoplasmoides genitalium*
+  GCF_040556925.1) and two draft assemblies (GCF_025234795.1, 135 contigs;
+  GCF_006539825.1, 68 contigs) annotated by RefSeq PGAP and Bakta 1.12.2. Manifest
+  tools may record a `genetic_code` that the checker passes to Annostat, because
+  Bakta 1.12.2 GFF3 declares no `transl_table`. The oracle accepts NCBI's
+  translated incomplete final codon on 3'-partial CDSs and contigs without CDSs.
 
 ### Fixed
 

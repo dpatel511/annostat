@@ -507,17 +507,1062 @@
         }
       ],
       "transformations": []
+    },
+    {
+      "accession": "GCF_040556925.1",
+      "name": "Mycoplasmoides genitalium",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NZ_CP159789.1": [
+          580076,
+          "e74f9b0cbb7617b1e25f306cf99007a7f097aee573ba2d88b43087d30e9f2a5e"
+        ]
+      },
+      "tools": {
+        "RefSeq": {
+          "fasta": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_genomic.fna",
+          "gff": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_genomic.gff",
+          "gbff": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_genomic.gbff",
+          "faa": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_protein.faa",
+          "version": "NCBI RefSeq PGAP 6.9; annotation date 2025-03-31",
+          "sha256": {
+            "fasta": "cddcc65f005348f0785bf78ec73884852bb35c3fa6f20566b19a942a1d0ef625",
+            "gff": "deff52100d82ad36ff7ae4cd60cb96ce6f577123b99e3f47f0530efdb0848e75",
+            "gbff": "d0f72a8d72697e035f0fccfa0442851873314b3026f677821ab67b52559ad941",
+            "faa": "4ec7b155b99d398e075228a8cc26e1051572eaddaf9dadb6e1ab2a35e3db159e"
+          }
+        },
+        "Bakta 1.12.2": {
+          "fasta": "inputs/GCF_040556925.1/bakta-1.12.2/annotation.fna",
+          "gff": "inputs/GCF_040556925.1/bakta-1.12.2/annotation.gff3",
+          "gbff": "inputs/GCF_040556925.1/bakta-1.12.2/annotation.gbff",
+          "faa": "inputs/GCF_040556925.1/bakta-1.12.2/annotation.faa",
+          "version": "Bakta 1.12.2; database 6.0 (full); Bakta Web run 2026-11-22",
+          "supplied": {
+            "fasta": "bakta.fna",
+            "gff": "bakta.gff3",
+            "gbff": "bakta.gbff",
+            "faa": "bakta.faa"
+          },
+          "sha256": {
+            "fasta": "2534d417281c98ba06b2775a4c8f32c0a7ce63aff02ca1915172433c942b1036",
+            "gff": "5c7762545b2d0622c3f5a87c30764a31909d75ab59ea208d793a8c141bea5e32",
+            "gbff": "ca56d1b6dea3c944916febf4f2b30b8c4b8dc72fb6d2a1c79cd98fce605c5efe",
+            "faa": "974899734d5885868dc9a0dcf52b051bdb961fd42febfa4bf799081a44619ade"
+          },
+          "bakta_config": {
+            "complete_genome": true,
+            "genus": "Mycoplasmoides",
+            "keep_contig_headers": true,
+            "species": "genitalium",
+            "strain": "G37",
+            "translation_table": 4
+          },
+          "genetic_code": 4
+        }
+      },
+      "downloads": [
+        {
+          "path": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/040/556/925/GCF_040556925.1_ASM4055692v1/GCF_040556925.1_ASM4055692v1_genomic.fna.gz",
+          "bytes": 165804,
+          "sha256": "fd1295cdf847669c8c64aafa00a5c684f40da4588c79b3d7f0378e20178de5d6"
+        },
+        {
+          "path": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/040/556/925/GCF_040556925.1_ASM4055692v1/GCF_040556925.1_ASM4055692v1_genomic.gff.gz",
+          "bytes": 51369,
+          "sha256": "d4d3949adb3f4a1ef482731f4482e049fac1cfa8a6f6f5981183b0fb28d44e4b"
+        },
+        {
+          "path": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/040/556/925/GCF_040556925.1_ASM4055692v1/GCF_040556925.1_ASM4055692v1_genomic.gbff.gz",
+          "bytes": 429311,
+          "sha256": "29712799949843030fb955f48621fe99e7be6880e956b1b1de672374d4c791d5"
+        },
+        {
+          "path": "inputs/GCF_040556925.1/refseq/GCF_040556925.1_ASM4055692v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/040/556/925/GCF_040556925.1_ASM4055692v1/GCF_040556925.1_ASM4055692v1_protein.faa.gz",
+          "bytes": 116901,
+          "sha256": "3ecc4b3d3f553db28a9d31d28a14819f765c6416c95456e56bf915decb8b6889"
+        }
+      ],
+      "transformations": []
+    },
+    {
+      "accession": "GCF_025234795.1",
+      "name": "Exiguobacterium mexicanum",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NZ_JANIEJ010000019.1": [
+          45430,
+          "c507657d38ec165ec090aa754d754624337972c36dbaeaf17621f7c6987067de"
+        ],
+        "NZ_JANIEJ010000047.1": [
+          22462,
+          "58fe22af457e11d43d1cc5341f5b25320d1b40231a4ab881f822cc3b70f60f42"
+        ],
+        "NZ_JANIEJ010000011.1": [
+          59532,
+          "d671d25783c4339e5b48ed73d317f6703127d8667f342284758570c6df3f2a61"
+        ],
+        "NZ_JANIEJ010000090.1": [
+          9508,
+          "0524f4e2edf9f94fb632eb3dcdf943d27b704699ddc2c27eaf69d333292cbd6a"
+        ],
+        "NZ_JANIEJ010000058.1": [
+          17286,
+          "4210c9f5e2752ee0726f44fa1c80930b084395a6b6f28cac372f2d1720f93972"
+        ],
+        "NZ_JANIEJ010000086.1": [
+          10472,
+          "44781d3caa992f1ab08a36450f9d467adc2722645d4ca0d3e06b404b4432f2a3"
+        ],
+        "NZ_JANIEJ010000091.1": [
+          9191,
+          "6340952e7ac40e667d1d9131491e1bfcb74fd546afdc79e61f91b83972ecf868"
+        ],
+        "NZ_JANIEJ010000065.1": [
+          15741,
+          "d95494ff94d911d1b93530968b33d2de7cc8980c768adf980dc5600baa65aefc"
+        ],
+        "NZ_JANIEJ010000103.1": [
+          6951,
+          "b6b7fe09751aad753736558a7d5c1831608a000dd87b0e2b980860ecf0fa8db6"
+        ],
+        "NZ_JANIEJ010000059.1": [
+          17183,
+          "5c03ee267ddb72af7db5afa09a9e7f24464acfaa4ddbe023cfc5ad71d233e37e"
+        ],
+        "NZ_JANIEJ010000075.1": [
+          12254,
+          "d31f85d7abb86cfeddfeccb2b0bbef807e183bb11074c76b2e2c7abdb435d530"
+        ],
+        "NZ_JANIEJ010000066.1": [
+          14987,
+          "64aea842a6066a9ae9978f1c54b49002480d744e1edd956c00a398bbff8c993a"
+        ],
+        "NZ_JANIEJ010000035.1": [
+          27758,
+          "14caf0257ac1ea509626cd3d194bd6115890044150eb6cd736598e06be97883a"
+        ],
+        "NZ_JANIEJ010000123.1": [
+          2556,
+          "022aab25996aee897efa691ed964c38cd25c585b0bcf0309bb2bae033fa38883"
+        ],
+        "NZ_JANIEJ010000057.1": [
+          17427,
+          "ca1c461033b19ec9d793333ec5e1e690e27d62a688b33c994abb14d5e8e0f197"
+        ],
+        "NZ_JANIEJ010000085.1": [
+          10488,
+          "08464cd069f3b33cd14b36625a5f17d4ae00cfb350957efadf481bf863461fcf"
+        ],
+        "NZ_JANIEJ010000042.1": [
+          24644,
+          "a4e13c359be49922c8ca28189fec77180f530502062dc7e80131d5b8f1985e4d"
+        ],
+        "NZ_JANIEJ010000021.1": [
+          38658,
+          "d75e073a89f039cf3a07f2fcb92991584fb5b4724ac4741d4ae78a0f4d1ebd23"
+        ],
+        "NZ_JANIEJ010000130.1": [
+          1405,
+          "4ce90bf64e5d4aed42709c35ee92015aa75a9a515ab8b3430e42cc66cd148293"
+        ],
+        "NZ_JANIEJ010000101.1": [
+          7035,
+          "cef36b8c1b44a05ea7d2f7174615a231dcb09c3f518a43ca0cca43a3d63cdbef"
+        ],
+        "NZ_JANIEJ010000009.1": [
+          62821,
+          "3c7683d73063cae3755c369e2ceab43ab88c0df989cccea07cd897685677163d"
+        ],
+        "NZ_JANIEJ010000117.1": [
+          3419,
+          "a1bc2d92477f7d219512eafc1c381bf98cbe3602bcea41ecdeedfdc11b57bf14"
+        ],
+        "NZ_JANIEJ010000124.1": [
+          2154,
+          "1ce6b6befb25d441e507f1f5b269f3ea25b0f589d8d3dd874a42195e4d7320cc"
+        ],
+        "NZ_JANIEJ010000108.1": [
+          5338,
+          "5c0d46047ced4453d9188999453c4c512d3b93b3c4901273afffd99cb0745695"
+        ],
+        "NZ_JANIEJ010000013.1": [
+          53745,
+          "1e5ab02e47a8d12f252be20f17658a676b5ed1130fc954e7ccf6f3ae83201c79"
+        ],
+        "NZ_JANIEJ010000083.1": [
+          11014,
+          "9ff225b3643e4ec351e68ed21bdf593d9c4aa4e752fd0709fb1880a62da9b059"
+        ],
+        "NZ_JANIEJ010000110.1": [
+          4685,
+          "225bbd80df0321eb04425fb33e5ea92d12c5b1768804ec12aa02355b66587131"
+        ],
+        "NZ_JANIEJ010000070.1": [
+          12862,
+          "20a1f39435c870a47107aac2d59aabf52b98eddfc5a6dcd885537b9db9863590"
+        ],
+        "NZ_JANIEJ010000072.1": [
+          12601,
+          "7edc66a22d97e41c83356bb6191f64cc9429624883fbb73a647ecc721eb9a3a0"
+        ],
+        "NZ_JANIEJ010000126.1": [
+          2057,
+          "924cfb54762b56f753e984f2d60233fc3409ba68962f05e131ba5991200f6baf"
+        ],
+        "NZ_JANIEJ010000041.1": [
+          24870,
+          "958cb5133bba4a464c40626d7fc805826eaa4db28b38ef7d5a693aebc2c39c07"
+        ],
+        "NZ_JANIEJ010000030.1": [
+          33446,
+          "9a367f631659518f8ca4ea9c6a18a39b26a42ac6b412f9b2d448c5259220d64a"
+        ],
+        "NZ_JANIEJ010000026.1": [
+          35353,
+          "225c44c9df6af705db9eba0e1c0e8b52e9cf2fcee57688ddff3c799e85a132ee"
+        ],
+        "NZ_JANIEJ010000031.1": [
+          33032,
+          "5a0558b0f84a8d2385c48ccfd5b14008237407e704f88578f74e74824e7fa90e"
+        ],
+        "NZ_JANIEJ010000061.1": [
+          16619,
+          "cd182bc5b2bc34f0a3a59e901798d7491ea5ce277fd293620e193a95064d91fb"
+        ],
+        "NZ_JANIEJ010000120.1": [
+          3049,
+          "b8f0b2852156a3d29b4f915f7103def7ad432031b3fbdbe0680f42c92c39f7be"
+        ],
+        "NZ_JANIEJ010000068.1": [
+          14685,
+          "9ab035d7e7ff2ff70eeed979a161cdc6780f6cd5791fbb94e86183e92c955190"
+        ],
+        "NZ_JANIEJ010000074.1": [
+          12330,
+          "cf3a57465fad4774b92eda3df3d5a7a755a5584f18317159387ddb0c2b6edde8"
+        ],
+        "NZ_JANIEJ010000084.1": [
+          10679,
+          "a43d920c5e240a092fad15ae46e9e605dcf233be770b78b6663451117e8bf395"
+        ],
+        "NZ_JANIEJ010000003.1": [
+          78154,
+          "ce9804b8732fd39a0a18d334f444ebfb022f688ce2362e523e87b957ee864634"
+        ],
+        "NZ_JANIEJ010000106.1": [
+          5933,
+          "51c6b12804396113b23021d0c05634ac018bf8b6811891318bc25889d68ca480"
+        ],
+        "NZ_JANIEJ010000052.1": [
+          21461,
+          "6620ce548ce4897d327394e041a8cb872fdc356febf695fca70b1c2f7048bb9a"
+        ],
+        "NZ_JANIEJ010000131.1": [
+          1346,
+          "f6bd1440939629edfcd2ebcd30c766f1470bae281063038c3767f09e5c3c8b8f"
+        ],
+        "NZ_JANIEJ010000036.1": [
+          27231,
+          "2726006aef490f255279102c824611da2064deafe0d6c2c21f84d37af5d20f8d"
+        ],
+        "NZ_JANIEJ010000043.1": [
+          24332,
+          "c682579aa14cb405d5ca4397cd385136545bcf3d527c1d2a4b3abc21b2b0341a"
+        ],
+        "NZ_JANIEJ010000032.1": [
+          31144,
+          "2e217c682d18bfc6d3cdc5cb47dbc3d75f26613ffd01e53f00e180b3682cd4e8"
+        ],
+        "NZ_JANIEJ010000007.1": [
+          70784,
+          "990014499f5753ab52626c67b53fde55f4052bda81c8ce9fb9e17058c4de051c"
+        ],
+        "NZ_JANIEJ010000008.1": [
+          69416,
+          "d14345d33429d9cba6ae3cec1897bd6bcca3d1e026c7ef86dfe3b4fc4c4f0321"
+        ],
+        "NZ_JANIEJ010000127.1": [
+          1921,
+          "d1e406259408e72fa7e01d4290e2a9d902d740b318026aab530f975b184165e4"
+        ],
+        "NZ_JANIEJ010000135.1": [
+          803,
+          "b7b6660b6fa7ecf09265e5818248326395b5a097eaf645cc2c61c981fd109c05"
+        ],
+        "NZ_JANIEJ010000012.1": [
+          58590,
+          "b03dce7ed2c27e10d428387ccd694f991251e270badf98f3872fb83875eba3c1"
+        ],
+        "NZ_JANIEJ010000010.1": [
+          62448,
+          "9647703f906ea02c078f00df1a6e72ae29bf3db222c23304b9c4a03462187907"
+        ],
+        "NZ_JANIEJ010000097.1": [
+          8502,
+          "388106b67d13c5ec7f7468fda2bd9740df23b53f4d42d199c1d10b438147fd90"
+        ],
+        "NZ_JANIEJ010000076.1": [
+          12014,
+          "91f1b7e7f771a7e0242fe845a841b5f7a8466307321fd3b03bee11d0cdcfb943"
+        ],
+        "NZ_JANIEJ010000067.1": [
+          14914,
+          "0749f30ec94116215d71d27d02cdca4fd4e8ee6b6806b0281d3cd7fe6294500e"
+        ],
+        "NZ_JANIEJ010000071.1": [
+          12774,
+          "49245f9a4f503b3666f869d7187e60c985279ddd1f00f09dd42127abc0c13b43"
+        ],
+        "NZ_JANIEJ010000107.1": [
+          5559,
+          "a0f8584517f8763fd90599f091573dcdb4445835e7458087a4ed605c9037f87b"
+        ],
+        "NZ_JANIEJ010000133.1": [
+          1193,
+          "08c6f3d6312cd8e038d4f9cbdc9f00ae1ce3caadca9d4ca38a2d9b45d2826806"
+        ],
+        "NZ_JANIEJ010000132.1": [
+          1224,
+          "ceed691029694d6fb167eb090ab70bd71fec08163cc470825dae1a4075a10998"
+        ],
+        "NZ_JANIEJ010000073.1": [
+          12508,
+          "b6e1760616d9773c31788d53e919088adf0c27bcb67e0fc2482743e0f1b0b97c"
+        ],
+        "NZ_JANIEJ010000109.1": [
+          4885,
+          "1909acaee7f985d157878b919e5416f7babb0c0920c5ff89711828dd7e7839b0"
+        ],
+        "NZ_JANIEJ010000034.1": [
+          28283,
+          "a32545b4c6ae4d3c6b27eb3a113f1725e9af331e4f2ece29503323659083aaea"
+        ],
+        "NZ_JANIEJ010000087.1": [
+          10229,
+          "e3aef5ea5fc7f6c6819e35181db9a8e1d21ed57f0c66f0e55e9ef67d2d81b1c8"
+        ],
+        "NZ_JANIEJ010000014.1": [
+          51541,
+          "51a7364cfa56ffec1d7643707b99338bbb1811413d9b8c1ddf9d4a894e9ff3e6"
+        ],
+        "NZ_JANIEJ010000078.1": [
+          11770,
+          "88ded168ee88593947575cf3c7671e2b92a8737bb153799bb9eb52d338be27e7"
+        ],
+        "NZ_JANIEJ010000045.1": [
+          23507,
+          "6925549adf121ddf130f80a42e29a018224defef7881d7d57acf2185a0ac5388"
+        ],
+        "NZ_JANIEJ010000018.1": [
+          46320,
+          "b4bb2fb69eb2ccea282d570c630c897883240c0c58c8c59bea4b263c62a0a6ec"
+        ],
+        "NZ_JANIEJ010000102.1": [
+          6959,
+          "7c1e8bab5e2355efbde953a182c1fa95ba91c1f66226c7a10478e9c61a124800"
+        ],
+        "NZ_JANIEJ010000040.1": [
+          25737,
+          "28051f45f3b7d72302a7cc125c936553ce59a6a1d8b58352f72f0547f62e9edb"
+        ],
+        "NZ_JANIEJ010000098.1": [
+          7921,
+          "ef9f698cfd1254e641e98268c8987e45216ac67f09032136a913a4723f3f7f99"
+        ],
+        "NZ_JANIEJ010000039.1": [
+          26185,
+          "3880e090755fed6f3c6b11c2bfad3ddcb4055d78ad820d9cd9428baca0200c4a"
+        ],
+        "NZ_JANIEJ010000080.1": [
+          11651,
+          "5e91bba92e8ac7a1993fa88fb95727f18084b43e841a3792d02767b1f1c9e322"
+        ],
+        "NZ_JANIEJ010000055.1": [
+          19528,
+          "a79b9db6b90b776a12ef936889232c6951292ff09d23cb03862c73e0f9b112a1"
+        ],
+        "NZ_JANIEJ010000114.1": [
+          3821,
+          "c17f3f4f975f034584793b9de8b7007bd156e29c370748b0375a23f58e8ddb0e"
+        ],
+        "NZ_JANIEJ010000121.1": [
+          2863,
+          "94ffd15bcb97921433b073f9783bcd3f29b19d2521e0a47b4bce6beca44d594f"
+        ],
+        "NZ_JANIEJ010000105.1": [
+          6589,
+          "4a3696df298928b8b7904256bfbf8d290d51e3ff6ab1d1a4a312356817eb9bbd"
+        ],
+        "NZ_JANIEJ010000088.1": [
+          10057,
+          "8bcb77a4e32d8c3c61c3e30534f9f432ba7081772ecf7b3540bc27c5f1b79f24"
+        ],
+        "NZ_JANIEJ010000053.1": [
+          20795,
+          "267e53ff12fb8be3859cc9b573dfd6a9fe35361cf1077cc9996b134720887c4d"
+        ],
+        "NZ_JANIEJ010000028.1": [
+          34170,
+          "f4df3543fc2121c0714b88cdafd5b32e1671e24c0574a09c6686d68cc8ad3d99"
+        ],
+        "NZ_JANIEJ010000023.1": [
+          37847,
+          "f81119fe6410744d720144c60d6b3f37a9df1b75038a862f5b5e48a034f7ed52"
+        ],
+        "NZ_JANIEJ010000033.1": [
+          28634,
+          "6fa9c261334c4cbd830a42034b0453f47b744fa4889bfd506f0380796aa68682"
+        ],
+        "NZ_JANIEJ010000004.1": [
+          75904,
+          "a789b9df7c46aac00e9de536a39e3f96b2bccde81282d8a48488e070e5581312"
+        ],
+        "NZ_JANIEJ010000060.1": [
+          17027,
+          "619cb14f63056aa35a3380a74c24a1b0c6015bc01bb306d7032e2b3e55cfdafc"
+        ],
+        "NZ_JANIEJ010000100.1": [
+          7043,
+          "ce06599f5eed78c4f49cb6d38074a064e532ed3c1bb93a79d6df52022aa7946b"
+        ],
+        "NZ_JANIEJ010000093.1": [
+          8843,
+          "76276ad741513e3bf4e289d6a2412dc9351b003ebac6d4cb3e14d181966f6b11"
+        ],
+        "NZ_JANIEJ010000049.1": [
+          22082,
+          "f67df5f556b8215ac058125ff259ee7e4583df7ecb3924611daff5b864898c3c"
+        ],
+        "NZ_JANIEJ010000025.1": [
+          35477,
+          "86c182b91454e115c5a4d0747e4ada80025a6bbde4f937ba58b80850dd6e62df"
+        ],
+        "NZ_JANIEJ010000115.1": [
+          3635,
+          "8cefcfedd90d9fb49ccbb2ad58357fe3f7e88204b9e6ab039b66a3169d58e38a"
+        ],
+        "NZ_JANIEJ010000104.1": [
+          6653,
+          "fa8e8f83edb19db0a7da57adfe5269d6ccc5c22cd28a33f0df368e7bb727d401"
+        ],
+        "NZ_JANIEJ010000037.1": [
+          27162,
+          "ccf545d49c1b94bc55332963b130eb7ff5842db9de82aab7c46f637418bc321e"
+        ],
+        "NZ_JANIEJ010000077.1": [
+          11946,
+          "eb52f062fcefcdc93970e1fe0af9d55bce1465eeaaf91dfe5c5810cc402f0d05"
+        ],
+        "NZ_JANIEJ010000017.1": [
+          47190,
+          "3a1f8268225dee2c473f1c5919c1c6ef01db4db1bc3b8d9f96716164c85a457f"
+        ],
+        "NZ_JANIEJ010000024.1": [
+          36300,
+          "33a1fce4cb756d0e662ed0c79152ce96f51f123276661fb65739fd8a2ef13f0f"
+        ],
+        "NZ_JANIEJ010000081.1": [
+          11389,
+          "ee548f28b6a75bc95f2f737f402879eff21a44ef72ba6a1a5a2d0022a420b317"
+        ],
+        "NZ_JANIEJ010000062.1": [
+          16449,
+          "43cee77a0a90c26339a5a120b6ac652911be1cfe2da6eda19b33a5693b4b7a49"
+        ],
+        "NZ_JANIEJ010000082.1": [
+          11070,
+          "b64ca208bc27986a37f3e1f0f5a2623cf9ae822961c0377bbc5304909ce8bb5f"
+        ],
+        "NZ_JANIEJ010000005.1": [
+          74944,
+          "0c5b3338d4ca79bd36c1e023d74ca788dd353624dd84a3d3dcd39ab43138662f"
+        ],
+        "NZ_JANIEJ010000069.1": [
+          13615,
+          "6d647e00ec5d319130db5a4401329b5068307e0916cdb2f64550155312f1f9fc"
+        ],
+        "NZ_JANIEJ010000095.1": [
+          8763,
+          "04b5aeb7d8aac5790aa6f8d3967f8a9b544455e053f6e9cecf95d4528cda6477"
+        ],
+        "NZ_JANIEJ010000029.1": [
+          33820,
+          "9b62acd5746723c0a8212cb76ce0648674a0ad682d0703057710219065d1dc42"
+        ],
+        "NZ_JANIEJ010000112.1": [
+          3960,
+          "df32f408a485290edfe582393fcf8afeddb08633ef183058fe0b9fe3c89fb1d3"
+        ],
+        "NZ_JANIEJ010000022.1": [
+          38517,
+          "c0984d4c564fcb8f953183d6285914eb6ea8587d26f922bd9564aca619939f59"
+        ],
+        "NZ_JANIEJ010000134.1": [
+          901,
+          "c71c20d9dc448b2945416300b7fb3f3cdf54fcc27a915ea1cbbf09bae6be9b5a"
+        ],
+        "NZ_JANIEJ010000006.1": [
+          70806,
+          "a2e965c7f4375c1bcb168fba7abdb006914ae30d62ac57c275512982f9feb0f1"
+        ],
+        "NZ_JANIEJ010000015.1": [
+          50442,
+          "ee7320048546dc2ed6622943045c09ba3a36fbeea5dd50454d344296a5d9fb2f"
+        ],
+        "NZ_JANIEJ010000020.1": [
+          40802,
+          "663c26c2808f72cce3bddf382d4e0ff3aafd3bd7bc3fd4badb03ed49014ee2db"
+        ],
+        "NZ_JANIEJ010000096.1": [
+          8515,
+          "91b77fac12da44e2d8cd15cf2ecc602d8151ce927a8c873216d350a3cf5cc96b"
+        ],
+        "NZ_JANIEJ010000111.1": [
+          4003,
+          "acaef50e6ff8009cd94f3f3a7ba6dd544950faa4138555ed2890777dc63e044c"
+        ],
+        "NZ_JANIEJ010000116.1": [
+          3580,
+          "4fae004f4a78e1b4c6694ea4b0cb38cf85414ba0669a06a497773dd18f44755e"
+        ],
+        "NZ_JANIEJ010000001.1": [
+          121594,
+          "191e85ba2869593ccaabfb11d6dbca8439045b23eb0ce55041c8456e06edee3f"
+        ],
+        "NZ_JANIEJ010000063.1": [
+          16315,
+          "6529091cbd8b01f1274cb828965bce17016012aa3d03dae816adb6870aa5c7cc"
+        ],
+        "NZ_JANIEJ010000064.1": [
+          15798,
+          "cb3fc722bb465531a622590c26bf054420351bca190ed723f263739de5826321"
+        ],
+        "NZ_JANIEJ010000048.1": [
+          22188,
+          "551e728437f81407faf6effd63181f93419929006334c270f689b24036a92a74"
+        ],
+        "NZ_JANIEJ010000050.1": [
+          21984,
+          "db13f7ea75734388705422e63d3c8bf6d373f16a332eeb46aacd914a3b649c9e"
+        ],
+        "NZ_JANIEJ010000016.1": [
+          50353,
+          "4282657fcf6a8aca12496e46f4efae449d18e133c398642e02424bf8a438800e"
+        ],
+        "NZ_JANIEJ010000113.1": [
+          3840,
+          "96452c5e8458bc2d0b1dddb5fac874b8a5df931f97d1fe8982f06e90e0f54eec"
+        ],
+        "NZ_JANIEJ010000122.1": [
+          2660,
+          "c4628ef1ff476f3386fe0930355d725e455a79149b8e2a3e8a9bddee0ecc2ebb"
+        ],
+        "NZ_JANIEJ010000129.1": [
+          1794,
+          "724368d58f3612644450ef204563d198c1f9072f50ac9dc249eb2fcfb2b1a2ee"
+        ],
+        "NZ_JANIEJ010000118.1": [
+          3403,
+          "66ba9f1147ba757aa323696c6a556e5c55de03f3ecb764993ad6c2a411504944"
+        ],
+        "NZ_JANIEJ010000046.1": [
+          23436,
+          "2568edce98b8f0a8125d8f30f4307be6e843e9ac2a6efe455a9b1dd516dd899b"
+        ],
+        "NZ_JANIEJ010000079.1": [
+          11714,
+          "6bdd295f079180a4577113e801f6af345ca6fe5010e15398788ff7d0b7b1b473"
+        ],
+        "NZ_JANIEJ010000089.1": [
+          9543,
+          "184efd577a58feeb112a10fa9af7cc5eb4b1e97d3eb122589b93a0195ff2ef22"
+        ],
+        "NZ_JANIEJ010000092.1": [
+          8963,
+          "84bfe3e91c39e4039111b902b46c5e0866515a8b0924dc08479794f886b4ac39"
+        ],
+        "NZ_JANIEJ010000056.1": [
+          18352,
+          "0770c75d0531d09becb279f0c5fa6118e56c7544d3b348c59ad4a34417858e64"
+        ],
+        "NZ_JANIEJ010000099.1": [
+          7172,
+          "344f2818348e49d20809c5377ccf7ac9a92f8ac72865e5b9ecbb86183fabca53"
+        ],
+        "NZ_JANIEJ010000128.1": [
+          1835,
+          "5d2742af9b2eb1734646ecd1de365074d95936c933ba3c6302f550adbc373c45"
+        ],
+        "NZ_JANIEJ010000125.1": [
+          2075,
+          "b23f818984773b6c68677d19547de4fdad6047a8ad9201e2c59f1c1c4c68dee9"
+        ],
+        "NZ_JANIEJ010000038.1": [
+          26375,
+          "0f7d0debc8f3447d25817bee869212a344c16a9233ea30801c642c7ca85d92f6"
+        ],
+        "NZ_JANIEJ010000027.1": [
+          35013,
+          "0678ee2efbda367f8f5a398792623ffb98ab92915d174c192390074e686025a7"
+        ],
+        "NZ_JANIEJ010000094.1": [
+          8764,
+          "8f9ea798c0fc25df49b041848685fa5989b327968b82ba4d4e514cefb17990e9"
+        ],
+        "NZ_JANIEJ010000002.1": [
+          89212,
+          "48b384552fc3a1a704738b1b884338db2f0d5a0a0e8f8a733bce7dd0f60c96de"
+        ],
+        "NZ_JANIEJ010000119.1": [
+          3194,
+          "54cb8076b457a97c732f9f90400952b0a134b15278f032eb86a73d3513177935"
+        ],
+        "NZ_JANIEJ010000051.1": [
+          21682,
+          "81fbd6b338e620a203e26f9a270b6af98c3e150419822591b907f6b42487984a"
+        ],
+        "NZ_JANIEJ010000054.1": [
+          19658,
+          "af458463291f7aa90543d76cba73c945d82f8b4091f181e1eab3b484a523e299"
+        ],
+        "NZ_JANIEJ010000044.1": [
+          23961,
+          "a2c6414eb7b675a547f615e4eeec2340bbf3002c84462663656c786fa2a6d6a4"
+        ]
+      },
+      "tools": {
+        "RefSeq": {
+          "fasta": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_genomic.fna",
+          "gff": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_genomic.gff",
+          "gbff": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_genomic.gbff",
+          "faa": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_protein.faa",
+          "version": "NCBI RefSeq PGAP 6.11; annotation date 2026-08-03",
+          "sha256": {
+            "fasta": "641be97e925c30fc54d70658a621d4b897bdc9b9683bebefe1b546b64bdae6eb",
+            "gff": "02710b04aab1156c3e85f5de171069a66fc1fe9b245d1a65c4b2d50267b9bc8a",
+            "gbff": "4634325f9df6826880ee676810adf0b064b3e69f1289c7283cad6228155163e8",
+            "faa": "eb616f9d4666f3782244e858a21a3e44b49caa107c81843d2f0fb0754eef70c9"
+          }
+        },
+        "Bakta 1.12.2": {
+          "fasta": "inputs/GCF_025234795.1/bakta-1.12.2/annotation.fna",
+          "gff": "inputs/GCF_025234795.1/bakta-1.12.2/annotation.gff3",
+          "gbff": "inputs/GCF_025234795.1/bakta-1.12.2/annotation.gbff",
+          "faa": "inputs/GCF_025234795.1/bakta-1.12.2/annotation.faa",
+          "version": "Bakta 1.12.2; database 6.0 (full); Bakta Web run 2026-11-22",
+          "supplied": {
+            "fasta": "bakta.fna",
+            "gff": "bakta.gff3",
+            "gbff": "bakta.gbff",
+            "faa": "bakta.faa"
+          },
+          "sha256": {
+            "fasta": "4f5ba9958462c2cb2bc70aac2aa80fe815441dfb3faac07f36559092e18517f2",
+            "gff": "c90fe44f4e0513dfa358448085a49c684bfc2e03927ae27348df96fd411526b0",
+            "gbff": "18e41165b8a5d45f07373e1576e4446aac76b7f7415946fed90af597a7badd7b",
+            "faa": "bbf82b9cb1964b4919ca9b6b9d35813b7dfafee08b33aadbdbb1e4090d6488d9"
+          },
+          "bakta_config": {
+            "complete_genome": false,
+            "genus": "Exiguobacterium",
+            "keep_contig_headers": true,
+            "species": "mexicanum",
+            "strain": "IMTB_3094",
+            "translation_table": 11
+          }
+        }
+      },
+      "downloads": [
+        {
+          "path": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/025/234/795/GCF_025234795.1_ASM2523479v1/GCF_025234795.1_ASM2523479v1_genomic.fna.gz",
+          "bytes": 879283,
+          "sha256": "6b5b23c0a9f07b4992788d2db07ba89d867e0ef536f0c8bf7fd2a198f5e96575"
+        },
+        {
+          "path": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/025/234/795/GCF_025234795.1_ASM2523479v1/GCF_025234795.1_ASM2523479v1_genomic.gff.gz",
+          "bytes": 288790,
+          "sha256": "5435ab840643cd83bfeebbf7c08545facb1cc5ea12419cfe237893144dc43db4"
+        },
+        {
+          "path": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/025/234/795/GCF_025234795.1_ASM2523479v1/GCF_025234795.1_ASM2523479v1_genomic.gbff.gz",
+          "bytes": 2429593,
+          "sha256": "8d38cf47465cbd6b3bfd69324a2281b5949096e890f0c77bf3b4a7ec68897f37"
+        },
+        {
+          "path": "inputs/GCF_025234795.1/refseq/GCF_025234795.1_ASM2523479v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/025/234/795/GCF_025234795.1_ASM2523479v1/GCF_025234795.1_ASM2523479v1_protein.faa.gz",
+          "bytes": 588262,
+          "sha256": "585ea3790a206b16305830ea659c61b3450b61fba2dc3b2b3c44fe74d416e59d"
+        }
+      ],
+      "transformations": []
+    },
+    {
+      "accession": "GCF_006539825.1",
+      "name": "Corynebacterium variabile",
+      "coordinate_system": "1-based inclusive",
+      "sequences": {
+        "NZ_BJNT01000001.1": [
+          161831,
+          "afc00c232541d0ddb3c1b259781dda817f317ee62f680dc9a5e1f094e4ccbae2"
+        ],
+        "NZ_BJNT01000002.1": [
+          50846,
+          "bed43f56943a127452628df0ddebf3ee822bffb5fc28085656226e897b41529f"
+        ],
+        "NZ_BJNT01000003.1": [
+          171984,
+          "5d69d8cc97bd43766ffb7fd8bfdeeb09c488d4a77cb72c8cd59e44bdddef3326"
+        ],
+        "NZ_BJNT01000004.1": [
+          338264,
+          "95bc78e72faa7bb1787e8c3d0c79fa605ca28cc8ebe2c85f6a15df849048b972"
+        ],
+        "NZ_BJNT01000005.1": [
+          233537,
+          "ec5eeb7fe6050dd8faff469de86e915818d0f91b2f294101d03dca2d8957be95"
+        ],
+        "NZ_BJNT01000006.1": [
+          161015,
+          "e70464a4e7df65293347be547d6cae35f57f6547a879c2ed35eafbce163426cd"
+        ],
+        "NZ_BJNT01000007.1": [
+          63424,
+          "85ae13fef9426e85f2926247a394e54b2304e3c95b2bd0efece91f977f14009c"
+        ],
+        "NZ_BJNT01000008.1": [
+          185499,
+          "3f83df7c0f97d7692b99bf6dbd5a2850df0a34d99a19ba404c0c947b7fe05217"
+        ],
+        "NZ_BJNT01000009.1": [
+          165791,
+          "ada8cb2d49f06b06760f4e1f8a675e496b0a02223bd2ae0c93fb86921270700f"
+        ],
+        "NZ_BJNT01000010.1": [
+          29105,
+          "2f20d40fce37bfec4908ce8c30e13a0d83a8918824981f5820d6b3ddc68bf92c"
+        ],
+        "NZ_BJNT01000011.1": [
+          117673,
+          "64b836e2cc5f54ab756374550581385f6a5b79d7f823d18939b44fb83729229d"
+        ],
+        "NZ_BJNT01000012.1": [
+          144969,
+          "2b87aa4a58e3ce6e1dee0770135bfae4771a1fb608a7290cb5858ed149bb6473"
+        ],
+        "NZ_BJNT01000013.1": [
+          126375,
+          "d2996a72825981f16954697809dcb6229daec43f09c129b8829428e0d0078a93"
+        ],
+        "NZ_BJNT01000014.1": [
+          120439,
+          "6008763e2150bc9b8fba73bb496a96220e1591d0e7aa69fc9263ebf1976c6f33"
+        ],
+        "NZ_BJNT01000015.1": [
+          119920,
+          "10aa9e4b96bc230c97a2668ebd739bfa31cd4e4cb8b9197146c75e680bd23275"
+        ],
+        "NZ_BJNT01000016.1": [
+          112654,
+          "e5b6fedf9145bccb31481185cb1097200a5f0f0dda841ede18ea9cdd7c5c2b2f"
+        ],
+        "NZ_BJNT01000017.1": [
+          102233,
+          "fc3554eca7ce6edf97e7117da47583bb29befe552b814d258e3a921d025614bd"
+        ],
+        "NZ_BJNT01000018.1": [
+          90008,
+          "f6c13303182b45fd7fe9998b617b4509bf0c1682e39d432edf9bff1f3e7651de"
+        ],
+        "NZ_BJNT01000019.1": [
+          83883,
+          "5df2abbc0e735a75aed68952466621bd92bdbb1a74a29e5b5ec6356dbd9d0bde"
+        ],
+        "NZ_BJNT01000020.1": [
+          76793,
+          "c6aa199c1429bc31c9981c88531ca6a29e4853f6617d1d5a36d2668f13a3d9e9"
+        ],
+        "NZ_BJNT01000021.1": [
+          75236,
+          "b40efe7a130b0b773af31905d7598a99836fdec4f9957075cb1da7567df9574e"
+        ],
+        "NZ_BJNT01000022.1": [
+          64912,
+          "ac8c884dd3fe1174878d3054560963dbb0b4f2f9068eec0ec084d6c695bccb88"
+        ],
+        "NZ_BJNT01000023.1": [
+          869,
+          "2557ea7b2635f202e49b01eeec4db6aac8647a5a25e848c7bd0731f77cb6954c"
+        ],
+        "NZ_BJNT01000024.1": [
+          62055,
+          "745aea72fff8b6b98858c7ff4fd36844ae2218b3d81a8fa55bf4811975f5b47c"
+        ],
+        "NZ_BJNT01000025.1": [
+          56386,
+          "5c4f1dc5ea86b9ecd6e184f018624b0af27f732faf861e359ddc22d2d642bd38"
+        ],
+        "NZ_BJNT01000026.1": [
+          49566,
+          "2a0d125f715be34e90c3f9e9fe72b54c9079e12b9a28645a6cfbd4c710922d29"
+        ],
+        "NZ_BJNT01000027.1": [
+          44660,
+          "d7409e65666dad57c6a0b96236b88b5fa6e937872127d3ac30f993df5f18052d"
+        ],
+        "NZ_BJNT01000028.1": [
+          34694,
+          "56bbcc72eae61f41296b20ac213ccf947bf453225fad41b8979c74df50a6720b"
+        ],
+        "NZ_BJNT01000029.1": [
+          26350,
+          "61545f2ef9c4bfa11df4d31c0070d60141bf7a987d5dc857a0b78b67eb6f4090"
+        ],
+        "NZ_BJNT01000030.1": [
+          14984,
+          "12cd07a8e5cb6153e16cb50b865dff043cf629e49c0ffd2e2620da2d09d75c5b"
+        ],
+        "NZ_BJNT01000031.1": [
+          11486,
+          "9cdb5be38a466cd920206286cb981565a0ef7f1fc5fd95514c3e471f32191fa4"
+        ],
+        "NZ_BJNT01000032.1": [
+          10673,
+          "6f401680205e2cdf8e3aa7e7810538db94d4a8496c1ac517756035fe2449a439"
+        ],
+        "NZ_BJNT01000033.1": [
+          10511,
+          "dc32254c3d6ece8508c8b4f8c6f819ff90eb3d743aa121a14c3447731933d035"
+        ],
+        "NZ_BJNT01000034.1": [
+          7104,
+          "5ae2602e0b1a649b68ee65f1ee414a864c4af47e2c9bc13032484ea0994ddae0"
+        ],
+        "NZ_BJNT01000035.1": [
+          6858,
+          "955c991c1a8efa558ca61636f29c9bd6e988d19ed19b13b1573b72f293048937"
+        ],
+        "NZ_BJNT01000036.1": [
+          5488,
+          "3bf31fcf949237847e2ad7e7066c59258c9f4042a044e5ab9b34a4cc56437269"
+        ],
+        "NZ_BJNT01000037.1": [
+          5165,
+          "ed0521c3dbfbe24a1485de2353e91c68c657b654b9a7c2b8e77b9de408898f5a"
+        ],
+        "NZ_BJNT01000038.1": [
+          3461,
+          "232c85eb296c2b6d1d409b3cb0e81ca851ad656388de4c1c7e95be904f71536c"
+        ],
+        "NZ_BJNT01000039.1": [
+          3155,
+          "b52827acbe38a745c0a23f605c119bfd1e593011458125578c48e05b138ec5ca"
+        ],
+        "NZ_BJNT01000040.1": [
+          2982,
+          "1b72ce0ad2bbbbdef720b074b93a84516badb13e4f91b57449bed16cc9ef0875"
+        ],
+        "NZ_BJNT01000041.1": [
+          2363,
+          "efd5364d84f0d5506ca77748ec7d9dbe6f3ac0e3af8f63b8ce06fa6301176857"
+        ],
+        "NZ_BJNT01000042.1": [
+          2347,
+          "0f0381f02c4c59f47c70abb24f26eb44b4ab9f4acbfdfebb155358b2cc386e18"
+        ],
+        "NZ_BJNT01000043.1": [
+          2240,
+          "dca9399926f8f32ca9cb666973a91646550f2391a0432a6d789dc7f79e286413"
+        ],
+        "NZ_BJNT01000044.1": [
+          2180,
+          "732d3b403b3dcaa8955d06a8fc08845e4fa5e6ceebffe24fcbde55e7760114a8"
+        ],
+        "NZ_BJNT01000045.1": [
+          2116,
+          "c02bb358088f4ae72ed711c79b21ebf6cd99a547d2bd7b33145410cfceace91e"
+        ],
+        "NZ_BJNT01000046.1": [
+          2062,
+          "6adab9a46651f753d878a62b9b1902f0d221fadc727b04ee28bbaaf51bb6afca"
+        ],
+        "NZ_BJNT01000047.1": [
+          1857,
+          "b372277fcfc44d803dc60e10a0aec5ed4332497a7c1689d091e17d9e4fcd5df6"
+        ],
+        "NZ_BJNT01000048.1": [
+          1838,
+          "844a49f0f8b48c6c17f3154fb87bb3d4c1d2a212b44d6827d8d139ccea73034b"
+        ],
+        "NZ_BJNT01000049.1": [
+          1581,
+          "21d6d0dc8426a924c6c302986908e4bbb189e89014dc91da5cd148aa3040b14e"
+        ],
+        "NZ_BJNT01000050.1": [
+          1546,
+          "a3c62a7bece465cc67a232c7ffa88241b8083f56a8e29898b2fea69f8f4d4057"
+        ],
+        "NZ_BJNT01000051.1": [
+          1500,
+          "60c5426fdc2073f5e7f98681fcd803bd80ddd939798da6b5f87d5540c63cc7bd"
+        ],
+        "NZ_BJNT01000052.1": [
+          1498,
+          "09909fdd354e41732e6e17652c8a0834e68001f7a8c67f2bb15e7875b847dbf7"
+        ],
+        "NZ_BJNT01000053.1": [
+          1484,
+          "c92cf1a23b7268a0b8fd28809a20ca19e65895aa227030fada6c387a0123e240"
+        ],
+        "NZ_BJNT01000054.1": [
+          1463,
+          "68f2be3fe430d20db8b3e80e2bef4ec43b31c3298d3aff5dadcba4e4818c421b"
+        ],
+        "NZ_BJNT01000055.1": [
+          1456,
+          "08151afb08b659f359d1403f7df65a23c52dfcad7ab88dfd9ae2c6e4de47543c"
+        ],
+        "NZ_BJNT01000056.1": [
+          1330,
+          "921f9055eaf817505ed8b085731c0f4e536baebaebfd79a5638bd52fff6796c3"
+        ],
+        "NZ_BJNT01000057.1": [
+          1210,
+          "4207cf45c04d1503c75891527614ea3e4b509a9d000387ad24af1c3d9602d362"
+        ],
+        "NZ_BJNT01000058.1": [
+          1139,
+          "cb4604b9f6fceabfec811b7da1ccb0a8ce222f402734b425924d6748233281d9"
+        ],
+        "NZ_BJNT01000059.1": [
+          1016,
+          "fde9b0faf4cab3ef6c047f5e5ecd4de9e9b9d55a677c18b9981622e5f7dc8ed2"
+        ],
+        "NZ_BJNT01000060.1": [
+          979,
+          "9f79f7eb46d6140027d0878c623b61cef645dde9f75255523be4ebec9e81de72"
+        ],
+        "NZ_BJNT01000061.1": [
+          971,
+          "865cc6cf6c8a0a100435e44c85161b9942ca4c73b9af29027a42cf4011715193"
+        ],
+        "NZ_BJNT01000062.1": [
+          953,
+          "80a6059403c098a264fb89ab708c84a9a6c36d058ea5db103ebb988281186a5c"
+        ],
+        "NZ_BJNT01000063.1": [
+          946,
+          "853f95d916b03aeddcc9b7f5fb57a5cc10942105bae0b8d81083ef1f4c182f3c"
+        ],
+        "NZ_BJNT01000064.1": [
+          892,
+          "be8bd1cbd04023576563b917ec49c1ab4a7e3de1702fcc6021269d1736e7e542"
+        ],
+        "NZ_BJNT01000065.1": [
+          870,
+          "5f9a1c626d2f7bc7c6c0bbe754ee627f3ea998d2bad5f663975de1ca96193fc7"
+        ],
+        "NZ_BJNT01000066.1": [
+          716,
+          "4038694be8f9bca9fd3075c691f20c52a4cfd6def89fcb819fad1637968dc069"
+        ],
+        "NZ_BJNT01000067.1": [
+          702,
+          "17506fa7cb8993e8f5d8e095427200086f425b7dab2352b899ca9228688664be"
+        ],
+        "NZ_BJNT01000068.1": [
+          616,
+          "372caa192f6f63bce925432442f6f8a445aa3334bd154533ffc58a41233a2194"
+        ]
+      },
+      "tools": {
+        "RefSeq": {
+          "fasta": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_genomic.fna",
+          "gff": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_genomic.gff",
+          "gbff": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_genomic.gbff",
+          "faa": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_protein.faa",
+          "version": "NCBI RefSeq PGAP 6.11; annotation date 2026-09-10",
+          "sha256": {
+            "fasta": "77ba2839a79ce5c38d3459edfe796f5db74ee572fc0d042364ac0372ab9e7e7d",
+            "gff": "33ca8b85ba9d2b679a7dfe265ea05b676e42354f1845b2965af5550c1492bee5",
+            "gbff": "9a0f5adbb25fbd3d0a3aa120ecd088314f34bd13bb6c0389f93889362b21a52f",
+            "faa": "7589b9d49621084860171842d58001b0b5f477610e1c50e62fa287fe7d0cf0ce"
+          }
+        },
+        "Bakta 1.12.2": {
+          "fasta": "inputs/GCF_006539825.1/bakta-1.12.2/annotation.fna",
+          "gff": "inputs/GCF_006539825.1/bakta-1.12.2/annotation.gff3",
+          "gbff": "inputs/GCF_006539825.1/bakta-1.12.2/annotation.gbff",
+          "faa": "inputs/GCF_006539825.1/bakta-1.12.2/annotation.faa",
+          "version": "Bakta 1.12.2; database 6.0 (full); Bakta Web run 2026-11-22",
+          "supplied": {
+            "fasta": "bakta.fna",
+            "gff": "bakta.gff3",
+            "gbff": "bakta.gbff",
+            "faa": "bakta.faa"
+          },
+          "sha256": {
+            "fasta": "5258ed606afc0bf83ac6c3d391aa64637c3e747b6a09d15d11bb4ec8c35fbe16",
+            "gff": "3e669d5c757bd8c440ad03ae14599421b17fe052596071ab3d53fc5c8dcf3611",
+            "gbff": "86a6e92b8132bbec653bdb7dddb061ae11d1ff10ddfe93a6e70b705c571202b8",
+            "faa": "75562aee234eeeb56a2d140ccabaacb5ef634deedd221cda4623f1734f1915c1"
+          },
+          "bakta_config": {
+            "complete_genome": false,
+            "genus": "Corynebacterium",
+            "keep_contig_headers": true,
+            "species": "variabile",
+            "strain": "NBRC15286",
+            "translation_table": 11
+          }
+        }
+      },
+      "downloads": [
+        {
+          "path": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_genomic.fna.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/006/539/825/GCF_006539825.1_ASM653982v1/GCF_006539825.1_ASM653982v1_genomic.fna.gz",
+          "bytes": 915682,
+          "sha256": "6f9096f9ee9189a56a0bef00447da19a9c1ea544bfb87d0d2b1d2d20bdcdddbd"
+        },
+        {
+          "path": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_genomic.gff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/006/539/825/GCF_006539825.1_ASM653982v1/GCF_006539825.1_ASM653982v1_genomic.gff.gz",
+          "bytes": 282906,
+          "sha256": "a024c44d58c76440fb1f9a5c281a13df5365748bdfb11427a1a1b4d28255dc04"
+        },
+        {
+          "path": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_genomic.gbff.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/006/539/825/GCF_006539825.1_ASM653982v1/GCF_006539825.1_ASM653982v1_genomic.gbff.gz",
+          "bytes": 2423902,
+          "sha256": "de2686edb01b971b22707db558e9ee559e52b36bf0c950df6755466e43b529cf"
+        },
+        {
+          "path": "inputs/GCF_006539825.1/refseq/GCF_006539825.1_ASM653982v1_protein.faa.gz",
+          "url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/006/539/825/GCF_006539825.1_ASM653982v1/GCF_006539825.1_ASM653982v1_protein.faa.gz",
+          "bytes": 617000,
+          "sha256": "928a931404d5c80844409d141c1e511ab5af2bad08598efb81563d9ca8a280ba"
+        }
+      ],
+      "transformations": []
     }
   ],
-  "frozen_date": "2026-11-21",
+  "frozen_date": "2026-11-22",
   "sources": {
-    "Bakta 1.12.2": "Bakta Web V2 API https://api.bakta.computational.bio/api/v2 (backend 1.1.0, Bakta 1.12.2, database 6.0); outputs are supplied locally because job results are deleted after 30 days",
+    "Bakta 1.12.2": "Bakta Web V2 API https://api.bakta.computational.bio/api/v2 (backend 1.1.0, Bakta 1.12.2, database 6.0); outputs are supplied locally because job results are deleted after 30 days. Bakta 1.12.2 GFF3 declares no transl_table; tools with genetic_code are analyzed with that table (its GenBank declares it)",
     "Bakta 1.1": "Published benchmark examples, https://doi.org/10.5281/zenodo.5253552",
-    "RefSeq": "NCBI FTP; GCF_000067165.1 files replaced on 2026-11-21 (109 product and 38 inference attributes renamed in place, no coordinate change, unchanged annotation date)"
+    "RefSeq": "NCBI FTP; GCF_000067165.1 files replaced on 2026-11-21 (109 product and 38 inference attributes renamed in place, no coordinate change, unchanged annotation date); GCF_040556925.1, GCF_025234795.1 and GCF_006539825.1 added 2026-11-22"
   },
   "limitations": [
     "Bakta 1.12.2 outputs are pinned by hash but not publicly deposited; rerunning Bakta may not reproduce identical bytes.",
     "Two RefSeq records (GCF_000009045.1, GCF_000013425.1) are not PGAP annotations; GCF_000817005.1 is a 2022 PGAP annotation.",
-    "All inputs use NCBI table 11 and complete assemblies; table 4/25 and fragmented drafts are not covered."
+    "Table 4 is represented by one complete genome and draft assemblies by two PGAP 6.11 references; table 25 and fungal annotations are not covered."
   ]
 }

@@ -203,16 +203,21 @@ def main():
                 folder = output/'analyses'/(acc+'-'+label)
                 inputs = ['-f', root/source['fasta'], '-g', root/source['gff']]
                 run(acc+'-'+label+'-validate', ['validate', *inputs, '-o', output/'validation'/(acc+'-'+label), '--fail-on', 'error'])
-                run(acc+'-'+label+'-analyze', ['analyze', *inputs, '-o', folder, '--table-format', 'tsv'])
+                table = ['--genetic-code', source['genetic_code']] if 'genetic_code' in source else []  # GFF3 without transl_table
+                run(acc+'-'+label+'-analyze', ['analyze', *inputs, '-o', folder, '--table-format', 'tsv', *table])
                 summaries[label] = check_analysis(folder, models[label], raw, genome)
                 check_figures(folder, summary=summaries[label], models=models[label])
                 check_analysis_terminal(output/'logs'/(acc+'-'+label+'-analyze.stdout'), summaries[label])
                 analyses.append(folder/'summary.json')
                 case_result['tools'][label] = dict(cds=len(models[label]), published_protein_checks=published,
-                    computed_only_pseudogenes=len(models[label])-published, genome_bp=sum(map(len, genome.values())), sequence_count=len(genome))
+                    computed_only_pseudogenes=len(models[label])-published,
+                    partial_final_codon_residues=sum(bool(m['trimmed_partial_codon']) for m in models[label].values()), genome_bp=sum(map(len, genome.values())), sequence_count=len(genome))
+            tables = [x for label, source in sources.items() if 'genetic_code' in source
+                      for x in ('--genetic-code', label, source['genetic_code'])]
             aggregate_args = ['compare']
             for label, source in sources.items():
                 aggregate_args += ['--genome', label, root/source['fasta'], root/source['gff']]
+            aggregate_args += tables
             aggregate = output/'aggregate'/acc
             run(acc+'-aggregate', [*aggregate_args, '-o', aggregate])
             document = json_file(aggregate/'comparison.json')
@@ -229,6 +234,8 @@ def main():
                     command = ['compare', '--gene-level']
                     for label in (a, b):
                         command += ['--genome', label, root/sources[label]['fasta'], root/sources[label]['gff']]
+                        if 'genetic_code' in sources[label]:
+                            command += ['--genetic-code', label, sources[label]['genetic_code']]
                     pair_jobs.append((acc+'-'+a+'-'+b, [*command, '-o', base/direction]+(['-q'] if direction == 'reverse' else []), direction == 'reverse'))
             with ThreadPoolExecutor(max_workers=3) as executor:
                 futures = [executor.submit(run, name, command, quiet) for name, command, quiet in pair_jobs]
