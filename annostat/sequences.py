@@ -12,7 +12,7 @@ from Bio.Data.IUPACData import protein_letters_3to1
 from annostat.models import CdsSequence, Feature
 
 
-CALCULATION_POLICY = "annotation-metrics-1.6"
+CALCULATION_POLICY = "annotation-metrics-1.7"
 CDS_ANNOTATION_ATTRIBUTES = (
     "gene", "product", "Dbxref", "pseudo", "pseudogene", "partial",
     "start_range", "end_range", "transl_except", "exception",
