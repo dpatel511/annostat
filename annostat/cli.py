@@ -18,6 +18,7 @@ from annostat.cohort import build_cohort, write_cohort
 from annostat.comparison import GenomeInput, run_comparison
 from annostat.filtering import CdsFilter
 from annostat.ncbi import fetch_genomes
+from annostat.qc import genetic_code_check_text
 from annostat.sequences import SUPPORTED_GENETIC_CODES
 from annostat.validation import validate_annotation, write_validation
 from annostat.workflow import run_analysis
@@ -334,6 +335,8 @@ def _print_summary(summary: dict[str, object], output_dir: Path, elapsed: float)
             f"{information_count:,} informational {information_label}",
         ),
     )
+    if summary.get("genetic_code_check"):
+        metrics += (("Genetic code check", genetic_code_check_text(summary["genetic_code_check"])),)
     print("\nAnalysis summary")
     print("-" * 56)
     _print_rows(metrics)

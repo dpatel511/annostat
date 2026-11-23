@@ -24,6 +24,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tools may record a `genetic_code` that the checker passes to Annostat, because
   Bakta 1.12.2 GFF3 declares no `transl_table`. The oracle accepts NCBI's
   translated incomplete final codon on 3'-partial CDSs and contigs without CDSs.
+- Flag a likely genetic-code mismatch: when at least 10 CDS models and 5% of CDS
+  models have unexplained internal stops and another supported table would leave
+  at least 90% of them without internal stops, `analyze` and `compare` add one
+  `possible_genetic_code_mismatch` QC warning. Analysis JSON adds
+  `genetic_code_check` (null otherwise) and the terminal summary and HTML report
+  name the codon and the tables that translate it. Analysis schema 1.4,
+  calculation policy `annotation-metrics-1.7`; translations are unchanged.
 
 ### Fixed
 

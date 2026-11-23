@@ -165,6 +165,12 @@ to the installed command.
   declares tables only on mitochondrial CDSs, so pass `--genetic-code 1` for their
   nuclear genes. Rows of one CDS that declare different tables are rejected, as is
   an override when every CDS declares another table. Reports list per-table CDS counts.
+  When at least 10 CDS models (and 5%) have internal stops that another supported
+  table would read as amino acids for 90% of them, analysis adds one
+  `possible_genetic_code_mismatch` QC warning naming the codon and those tables
+  (for example Bakta GFF3 of *Mycoplasma*, which declares no `transl_table`).
+  Tables 3, 4 and 25 share stop codons, so the hint cannot choose among them; a
+  genome without TGA stops analyzed with table 4 produces no internal stops.
 - Initiator M is a translation rule, not experimental evidence. Nonzero initial
   phase and 5′ partial markers prevent initiator recoding. Supported contiguous
   codon `transl_except` annotations include standard amino acids, Sec, Pyl, TERM

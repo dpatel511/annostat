@@ -23,7 +23,10 @@ from annostat.models import Feature
 from annostat.locus_context import CONTEXT_COLUMNS, collect_source_context
 from annostat.gene_report import gene_text_report, render_gene_report
 from annostat.plots import write_cog_comparison, write_comparison_overview, write_gene_consequences
-from annostat.qc import feature_quality_findings, quality_summary, sequence_quality_findings
+from annostat.qc import (
+    feature_quality_findings, genetic_code_check, genetic_code_finding, internal_stop_codons, quality_summary,
+    sequence_quality_findings,
+)
 from annostat.sequences import (
     BACTERIAL_GENETIC_CODES,
     CALCULATION_POLICY,
@@ -162,6 +165,7 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
     table_counts: Counter[int] = Counter()
     recognized_starts = 0
     cds_lengths: list[int] = []
+    stop_models: list[tuple[int, frozenset[str]]] = []
     for record in iter_cds_sequences(
         features,
         genome,
@@ -185,6 +189,10 @@ def _annotation_profile(dataset: GenomeInput, models: list[CdsModel] | None = No
                 circular=record.feature.seqid in circular_seqids,
             )
         )
+        if stops := internal_stop_codons(record):
+            stop_models.append((record.genetic_code, stops))
+    if code_check := genetic_code_check(stop_models, table_counts.total()):
+        findings.append(genetic_code_finding(code_check))
 
     feature_summary = analyze_features(features)
     quality = quality_summary(features, genome, circular_seqids, findings)

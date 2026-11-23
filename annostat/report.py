@@ -5,6 +5,8 @@ from __future__ import annotations
 from html import escape
 from pathlib import Path
 
+from annostat.qc import genetic_code_check_text
+
 
 
 def _percentage(part: int, whole: int) -> str:
@@ -90,6 +92,10 @@ def render_html_report(
         f"<tr><td>{escape(issue.replace('_', ' ').title())}</td><td>{count:,}</td></tr>"
         for issue, count in quality["issue_counts"].items()
     ) or "<tr><td>No findings</td><td>0</td></tr>"
+    code_check = summary.get("genetic_code_check")
+    code_note = (f'<p class="metric-note"><strong>Possible genetic-code mismatch:</strong> '
+                 f'{escape(genetic_code_check_text(code_check))}. Check the organism&#39;s genetic code '
+                 f'(<code>--genetic-code</code>).</p>' if code_check else "")
     validation_counts = validation["severity_counts"]
     validation_status = "Pass" if validation["valid"] else "Fail"
     validation_hashes = validation.get("input_sha256", {})
@@ -158,7 +164,7 @@ table{{width:100%;border-collapse:collapse}} td{{border-bottom:1px solid var(--l
 </section>
 <section class="figures">{figures}</section>
 <section class="summary-grid">
-  <article class="panel"><h2>Annotation quality findings</h2><table>{quality_rows}<tr><td>Total findings</td><td>{quality["finding_count"]:,}</td></tr></table><p class="metric-note">Findings are conservative review candidates, not automatic biological errors.</p></article>
+  <article class="panel"><h2>Annotation quality findings</h2><table>{quality_rows}<tr><td>Total findings</td><td>{quality["finding_count"]:,}</td></tr></table>{code_note}<p class="metric-note">Findings are conservative review candidates, not automatic biological errors.</p></article>
   <article class="panel"><h2>Structural validation</h2><dl>
     <dt>Status</dt><dd>{validation_status}</dd>
     <dt>Errors</dt><dd>{int(validation_counts["error"]):,}</dd>

@@ -177,8 +177,9 @@ result records its Bakta and database versions in its JSON and GFF3 header. Bakt
 1.12.2 GFF3 declares no `transl_table` (its GenBank file does), so the manifest
 records table 4 for that annotation and the checker passes it as `--genetic-code`.
 Without it, Annostat translates the *M. genitalium* Bakta models with table 11:
-372 of 522 proteins contain internal stops, reported as QC warnings, and the
-checker rejects the exports. Bakta Web deletes jobs after 30 days and the outputs
+372 of 522 proteins contain internal stops, reported as QC warnings (after 1.3.0
+also as one `possible_genetic_code_mismatch` warning naming TGA and tables 3, 4
+and 25), and the checker rejects the exports. Bakta Web deletes jobs after 30 days and the outputs
 are not deposited, so the manifest pins them by hash; a new run may not reproduce
 identical bytes and then needs a reviewed new manifest. Supply the outputs as
 `<accession>/bakta.{fna,gff3,gbff,faa}`:

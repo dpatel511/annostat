@@ -525,6 +525,68 @@ def _covered_bases(
     return covered
 
 
+def internal_stop_codons(record: CdsSequence) -> frozenset[str]:
+    """Return codons of the unexplained internal stops the internal_stop_codon rule reports."""
+
+    if _is_pseudogene(record.feature):
+        return frozenset()
+    coding = record.coding_nucleotide.upper()
+    exceptions = set(record.translation_exception_indices)
+    return frozenset(coding[3 * index:3 * index + 3] for index, amino_acid in enumerate(record.protein)
+                     if amino_acid == "*" and index not in exceptions)
+
+
+def genetic_code_check(stops: Iterable[tuple[int, frozenset[str]]], cds_models: int) -> dict[str, object] | None:
+    """Describe widespread internal stops that another supported table reads as amino acids.
+
+    ``stops`` holds (translation table, internal stop codons) for each CDS model with
+    unexplained internal stops. The check needs at least 10 such models and 5% of CDS
+    models, and another table must leave at least 90% of them without internal stops.
+    Tables with identical stop codons are listed together; the organism decides which
+    applies. A table without TGA stops applied to a TGA-stop genome raises no stops.
+    """
+
+    stopped = list(stops)
+    if len(stopped) < 10 or len(stopped) < 0.05 * cds_models:
+        return None
+    used = sorted({code for code, _ in stopped})
+    resolved = {code: sum(not codons & stop_codons for _, codons in stopped)
+                for code, stop_codons in _STOP_CODONS.items() if code not in used}
+    best = max(resolved.values(), default=0)
+    if best < 0.9 * len(stopped):
+        return None
+    codon_models = Counter(codon for _, codons in stopped for codon in codons)
+    return {
+        "cds_models": cds_models,
+        "models_with_internal_stops": len(stopped),
+        "translation_tables": used,
+        "internal_stop_codons": dict(sorted(codon_models.items())),
+        "alternative_tables": sorted(code for code, count in resolved.items() if count == best),
+        "resolved_models": best,
+    }
+
+
+def genetic_code_check_text(check: Mapping[str, object]) -> str:
+    """Summarize a genetic-code check in one ASCII sentence."""
+
+    codons = ", ".join(check["internal_stop_codons"])
+    return (f"{check['models_with_internal_stops']:,}/{check['cds_models']:,} CDS models stop internally at {codons}; "
+            f"tables {', '.join(map(str, check['alternative_tables']))} translate it")
+
+
+def genetic_code_finding(check: Mapping[str, object]) -> AnnotationIssue:
+    """Return the dataset-level QC finding for a genetic-code check."""
+
+    used = ", ".join(map(str, check["translation_tables"]))
+    return AnnotationIssue(
+        issue_type="possible_genetic_code_mismatch",
+        severity="warning",
+        details=(f"{genetic_code_check_text(check)} (translated with table {used}; {check['resolved_models']:,} of "
+                 f"these models have no internal stop under those tables); check the organism's genetic code "
+                 f"(--genetic-code)"),
+    )
+
+
 def quality_summary(
     features: Iterable[Feature],
     genome: Mapping[str, str],

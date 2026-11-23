@@ -24,6 +24,9 @@ from annostat.output import (
 from annostat.plots import write_bar_chart, write_histogram
 from annostat.qc import (
     feature_quality_findings,
+    genetic_code_check,
+    genetic_code_finding,
+    internal_stop_codons,
     quality_summary,
     sequence_quality_findings,
 )
@@ -40,7 +43,7 @@ from annostat.sequences import (
 from annostat.validation import load_and_validate_annotation, write_validation
 
 
-ANALYSIS_SCHEMA_VERSION = "1.3"
+ANALYSIS_SCHEMA_VERSION = "1.4"
 
 
 def _scientific_fingerprint(summary: dict[str, object]) -> str:
@@ -154,6 +157,7 @@ def _run_analysis(
     table_counts: Counter[int] = Counter()
     cds_lengths: list[int] = []
     filtered_records = []
+    stop_models: list[tuple[int, frozenset[str]]] = []
     quality_findings = feature_quality_findings(features, genome, circular_seqids,
                                                 selected_genetic_code in BACTERIAL_GENETIC_CODES)
 
@@ -182,6 +186,8 @@ def _run_analysis(
                     circular=record.feature.seqid in circular_seqids,
                 )
             )
+            if stops := internal_stop_codons(record):
+                stop_models.append((record.genetic_code, stops))
             if active_filter.active and active_filter.matches(
                 record.feature, length=record.length
             ):
@@ -192,6 +198,9 @@ def _run_analysis(
     if active_filter.active:
         write_cds_fastas(filtered_dir, filtered_records)
     stage_timings["cds_processing"] = perf_counter() - stage_started
+    code_check = genetic_code_check(stop_models, table_counts.total())
+    if code_check:
+        quality_findings.append(genetic_code_finding(code_check))
 
     notify("Calculating statistics and writing analysis tables")
     stage_started = perf_counter()
@@ -204,6 +213,7 @@ def _run_analysis(
     summary["genetic_code_source"] = genetic_code_source
     summary["genetic_code_counts"] = {str(code): count for code, count in sorted(table_counts.items())}
     summary["recognized_start_count"] = sum(recognized_starts.values())
+    summary["genetic_code_check"] = code_check
     summary["input_files"] = {"fasta": str(fasta_path), "gff3": str(gff_path)}
     summary["sequence_ids"] = sorted(genome)
     summary["circular_sequence_ids"] = sorted(circular_seqids)
